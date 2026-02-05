@@ -1,0 +1,103 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import { Deck } from '@/lib/types'
+import { getAllDecks, deleteDeck } from '@/lib/storage'
+import { DeckCard } from './DeckCard'
+import { DashboardHeader } from './DashboardHeader'
+
+interface DashboardProps {
+  onCreateDeck: () => void
+  refreshTrigger?: number
+}
+
+/**
+ * T030: Dashboard component for displaying all decks
+ */
+export function Dashboard({ onCreateDeck, refreshTrigger = 0 }: DashboardProps) {
+  const [decks, setDecks] = useState<Deck[]>([])
+  const [loading, setLoading] = useState(true)
+
+  // Load decks on mount and when refresh is triggered
+  useEffect(() => {
+    const loadDecks = async () => {
+      try {
+        setLoading(true)
+        const deckList = await getAllDecks()
+        setDecks(deckList)
+      } catch (error) {
+        console.error('Failed to load decks:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadDecks()
+  }, [refreshTrigger])
+
+  const handleDeleteDeck = async (deckId: string) => {
+    try {
+      await deleteDeck(deckId)
+      setDecks(decks.filter((d) => d.id !== deckId))
+    } catch (error) {
+      console.error('Failed to delete deck:', error)
+      throw error
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <DashboardHeader onCreateDeck={onCreateDeck} />
+
+      {/* Main Content */}
+      <div className="container mx-auto px-4 py-8">
+        {loading ? (
+          <div className="flex justify-center items-center py-12">
+            <p className="text-gray-500">Loading your decks...</p>
+          </div>
+        ) : decks.length === 0 ? (
+          <div className="text-center py-12">
+            <div className="mb-6">
+              <div className="inline-block p-4 bg-blue-50 rounded-full mb-4">
+                <span className="text-4xl">📚</span>
+              </div>
+            </div>
+            <h2 className="text-2xl font-semibold text-gray-900 mb-2">
+              No decks yet
+            </h2>
+            <p className="text-gray-600 mb-6">
+              Create your first flashcard deck to get started learning
+            </p>
+            <button
+              onClick={onCreateDeck}
+              className="px-6 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition"
+            >
+              Create Your First Deck
+            </button>
+          </div>
+        ) : (
+          <div>
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">Your Decks</h2>
+              <p className="text-gray-600 mt-1">
+                {decks.length} deck{decks.length !== 1 ? 's' : ''} total
+              </p>
+            </div>
+
+            {/* Decks Grid - Responsive across all breakpoints */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+              {decks.map((deck) => (
+                <DeckCard
+                  key={deck.id}
+                  deck={deck}
+                  onDelete={handleDeleteDeck}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
