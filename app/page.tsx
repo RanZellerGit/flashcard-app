@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useUser } from '@clerk/nextjs'
 import { Dashboard } from '@/components/Dashboard'
 import { DeckForm } from '@/components/DeckForm'
 import { createDeck } from '@/lib/storage'
@@ -9,12 +10,18 @@ import { createDeck } from '@/lib/storage'
  * T031: Dashboard page - home screen showing all decks
  */
 export default function Home() {
+  const { user } = useUser()
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [refreshTrigger, setRefreshTrigger] = useState(0)
 
   const handleCreateDeck = async (name: string) => {
+    if (!user?.id) {
+      console.error('User not authenticated')
+      return
+    }
+
     try {
-      await createDeck(name)
+      await createDeck(name, user.id)
       setShowCreateForm(false)
       // Trigger refresh of deck list
       setRefreshTrigger((prev) => prev + 1)
@@ -24,11 +31,20 @@ export default function Home() {
     }
   }
 
+  if (!user?.id) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p>Loading...</p>
+      </div>
+    )
+  }
+
   return (
     <>
       <Dashboard
         onCreateDeck={() => setShowCreateForm(true)}
         refreshTrigger={refreshTrigger}
+        userId={user.id}
       />
 
       {/* Create Deck Form Modal */}

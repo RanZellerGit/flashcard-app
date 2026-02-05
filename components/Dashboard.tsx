@@ -9,12 +9,13 @@ import { DashboardHeader } from './DashboardHeader'
 interface DashboardProps {
   onCreateDeck: () => void
   refreshTrigger?: number
+  userId: string
 }
 
 /**
  * T030: Dashboard component for displaying all decks
  */
-export function Dashboard({ onCreateDeck, refreshTrigger = 0 }: DashboardProps) {
+export function Dashboard({ onCreateDeck, refreshTrigger = 0, userId }: DashboardProps) {
   const [decks, setDecks] = useState<Deck[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -23,7 +24,7 @@ export function Dashboard({ onCreateDeck, refreshTrigger = 0 }: DashboardProps) 
     const loadDecks = async () => {
       try {
         setLoading(true)
-        const deckList = await getAllDecks()
+        const deckList = await getAllDecks(userId)
         setDecks(deckList)
       } catch (error) {
         console.error('Failed to load decks:', error)
@@ -33,11 +34,11 @@ export function Dashboard({ onCreateDeck, refreshTrigger = 0 }: DashboardProps) 
     }
 
     loadDecks()
-  }, [refreshTrigger])
+  }, [refreshTrigger, userId])
 
   const handleDeleteDeck = async (deckId: string) => {
     try {
-      await deleteDeck(deckId)
+      await deleteDeck(deckId, userId)
       setDecks(decks.filter((d) => d.id !== deckId))
     } catch (error) {
       console.error('Failed to delete deck:', error)

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
+import { useUser } from '@clerk/nextjs'
 import { Deck, Flashcard } from '@/lib/types'
 import { getDeck, getCardsByDeck } from '@/lib/storage'
 import { StudyMode } from '@/components/StudyMode'
@@ -12,6 +13,7 @@ import { StudyMode } from '@/components/StudyMode'
 export default function StudyPage() {
   const router = useRouter()
   const params = useParams()
+  const { user } = useUser()
   const deckId = params.id as string
 
   const [deck, setDeck] = useState<Deck | null>(null)
@@ -20,17 +22,19 @@ export default function StudyPage() {
 
   // Load deck and cards
   useEffect(() => {
+    if (!user?.id) return
+
     const load = async () => {
       try {
         setLoading(true)
-        const deckData = await getDeck(deckId)
+        const deckData = await getDeck(deckId, user.id)
         if (!deckData) {
           router.push('/')
           return
         }
         setDeck(deckData)
 
-        const cardsData = await getCardsByDeck(deckId)
+        const cardsData = await getCardsByDeck(deckId, user.id)
         setCards(cardsData)
       } catch (error) {
         console.error('Failed to load deck:', error)
@@ -41,7 +45,7 @@ export default function StudyPage() {
     }
 
     load()
-  }, [deckId])
+  }, [deckId, user?.id])
 
   const handleExit = () => {
     router.push('/')

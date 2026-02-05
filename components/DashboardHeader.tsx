@@ -1,5 +1,7 @@
 'use client'
 
+import { UserButton } from '@clerk/nextjs'
+
 /**
  * T032: DashboardHeader component for top navigation
  */
@@ -18,12 +20,15 @@ export function DashboardHeader({
           </p>
         </div>
 
-        <button
-          onClick={onCreateDeck}
-          className="px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition"
-        >
-          + Create New Deck
-        </button>
+        <div className="flex items-center gap-4">
+          <button
+            onClick={onCreateDeck}
+            className="px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition"
+          >
+            + Create New Deck
+          </button>
+          <UserButton />
+        </div>
       </div>
     </div>
   )

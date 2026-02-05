@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
+import { useUser } from '@clerk/nextjs'
 import { Deck, Flashcard } from '@/lib/types'
 import {
   getDeck,
@@ -10,7 +11,6 @@ import {
   updateCard,
   deleteCard,
 } from '@/lib/storage'
-import { useSession } from '@/lib/context/SessionContext'
 import { DeckCardsList } from '@/components/DeckCardsList'
 import { CardForm } from '@/components/CardForm'
 
@@ -20,7 +20,7 @@ import { CardForm } from '@/components/CardForm'
 export default function DeckDetailPage() {
   const router = useRouter()
   const params = useParams()
-  const { session } = useSession()
+  const { user } = useUser()
   const deckId = params.id as string
 
   const [deck, setDeck] = useState<Deck | null>(null)
@@ -29,23 +29,21 @@ export default function DeckDetailPage() {
   const [showAddForm, setShowAddForm] = useState(false)
   const [editingCard, setEditingCard] = useState<Flashcard | null>(null)
 
-  // Check if there's an active study session for this deck
-  const hasActiveSession =
-    session.currentStudySession?.deckId === deckId
-
   // Load deck and cards
   useEffect(() => {
+    if (!user?.id) return
+
     const load = async () => {
       try {
         setLoading(true)
-        const deckData = await getDeck(deckId)
+        const deckData = await getDeck(deckId, user.id)
         if (!deckData) {
           router.push('/')
           return
         }
         setDeck(deckData)
 
-        const cardsData = await getCardsByDeck(deckId)
+        const cardsData = await getCardsByDeck(deckId, user.id)
         setCards(cardsData)
       } catch (error) {
         console.error('Failed to load deck:', error)
@@ -56,11 +54,13 @@ export default function DeckDetailPage() {
     }
 
     load()
-  }, [deckId, router])
+  }, [deckId, router, user?.id])
 
   const handleAddCard = async (frontText: string, backText: string) => {
+    if (!user?.id) return
+
     try {
-      const newCard = await createCard(deckId, frontText, backText)
+      const newCard = await createCard(deckId, frontText, backText, user.id)
       setCards([...cards, newCard])
 
       // Update deck card count
@@ -76,13 +76,13 @@ export default function DeckDetailPage() {
   }
 
   const handleUpdateCard = async (frontText: string, backText: string) => {
-    if (!editingCard) return
+    if (!editingCard || !user?.id) return
 
     try {
       const updated = await updateCard(editingCard.id, {
         frontText,
         backText,
-      })
+      }, user.id)
 
       setCards(
         cards.map((c) => (c.id === updated.id ? updated : c))
@@ -95,8 +95,10 @@ export default function DeckDetailPage() {
   }
 
   const handleDeleteCard = async (cardId: string) => {
+    if (!user?.id) return
+
     try {
-      await deleteCard(cardId)
+      await deleteCard(cardId, user.id)
       setCards(cards.filter((c) => c.id !== cardId))
 
       // Update deck card count
@@ -186,26 +188,14 @@ export default function DeckDetailPage() {
           </button>
         )}
 
-        {/* Study Buttons */}
+        {/* Study Button */}
         {cards.length > 0 && (
           <div className="mt-4 space-y-3">
-            {hasActiveSession && (
-              <button
-                onClick={() => router.push(`/deck/${deckId}/study`)}
-                className="w-full px-4 py-3 bg-orange-600 text-white font-medium rounded-lg hover:bg-orange-700 transition"
-              >
-                Resume Study (Card {(session.currentStudySession?.cardIndex ?? 0) + 1})
-              </button>
-            )}
             <button
-              onClick={() =>
-                router.push(
-                  `/deck/${deckId}/study${hasActiveSession ? '?start=beginning' : ''}`
-                )
-              }
+              onClick={() => router.push(`/deck/${deckId}/study`)}
               className="w-full px-4 py-3 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition"
             >
-              {hasActiveSession ? 'Start From Beginning' : 'Start Study'}
+              Start Study
             </button>
           </div>
         )}

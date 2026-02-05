@@ -19,7 +19,7 @@ import {
 } from './utils'
 
 const DB_NAME = 'flashcard-app'
-const DB_VERSION = 1
+const DB_VERSION = 2
 const STORES = {
   DECKS: 'decks',
   CARDS: 'cards',
@@ -82,6 +82,7 @@ export async function initializeStorage(): Promise<void> {
           keyPath: 'id',
         })
         decksStore.createIndex('createdDate', 'createdDate', { unique: false })
+        decksStore.createIndex('userId', 'userId', { unique: false })
       }
 
       if (!database.objectStoreNames.contains(STORES.CARDS)) {
@@ -89,6 +90,7 @@ export async function initializeStorage(): Promise<void> {
           keyPath: 'id',
         })
         cardsStore.createIndex('deckId', 'deckId', { unique: false })
+        cardsStore.createIndex('userId', 'userId', { unique: false })
       }
     }
   })
@@ -150,7 +152,7 @@ function saveAllCardsToStorage(cards: Flashcard[]): void {
 // DECK OPERATIONS
 // ============================================================================
 
-export async function createDeck(name: string): Promise<Deck> {
+export async function createDeck(name: string, userId: string): Promise<Deck> {
   if (!validateDeckName(name)) {
     throw new ValidationError('Deck name must be 1-200 characters')
   }
@@ -161,6 +163,7 @@ export async function createDeck(name: string): Promise<Deck> {
     createdDate: formatDate(),
     updatedDate: formatDate(),
     cardCount: 0,
+    userId,
   }
 
   if (useIndexedDB && db) {
@@ -181,28 +184,32 @@ export async function createDeck(name: string): Promise<Deck> {
   }
 }
 
-export async function getAllDecks(): Promise<Deck[]> {
+export async function getAllDecks(userId: string): Promise<Deck[]> {
   if (useIndexedDB && db) {
     return new Promise((resolve, reject) => {
       const transaction = db!.transaction([STORES.DECKS], 'readonly')
       const store = transaction.objectStore(STORES.DECKS)
-      const index = store.index('createdDate')
-      const request = index.getAll()
+      const index = store.index('userId')
+      const request = index.getAll(userId)
 
       request.onsuccess = () => {
-        const decks = (request.result as Deck[]).reverse() // newest first
+        const decks = (request.result as Deck[]).sort((a, b) =>
+          new Date(b.createdDate).getTime() - new Date(a.createdDate).getTime()
+        )
         resolve(decks)
       }
       request.onerror = () => reject(new StorageError('Failed to fetch decks'))
       transaction.onerror = () => reject(new StorageError('Transaction failed'))
     })
   } else {
-    const decks = getAllDecksFromStorage()
-    return decks.reverse() // newest first
+    const decks = getAllDecksFromStorage().filter((d) => d.userId === userId)
+    return decks.sort((a, b) =>
+      new Date(b.createdDate).getTime() - new Date(a.createdDate).getTime()
+    )
   }
 }
 
-export async function getDeck(deckId: string): Promise<Deck | null> {
+export async function getDeck(deckId: string, userId: string): Promise<Deck | null> {
   if (useIndexedDB && db) {
     return new Promise((resolve, reject) => {
       const transaction = db!.transaction([STORES.DECKS], 'readonly')
@@ -210,22 +217,29 @@ export async function getDeck(deckId: string): Promise<Deck | null> {
       const request = store.get(deckId)
 
       request.onsuccess = () => {
-        resolve(request.result || null)
+        const deck = request.result || null
+        if (deck && deck.userId !== userId) {
+          resolve(null)
+        } else {
+          resolve(deck)
+        }
       }
       request.onerror = () => reject(new StorageError('Failed to fetch deck'))
       transaction.onerror = () => reject(new StorageError('Transaction failed'))
     })
   } else {
     const decks = getAllDecksFromStorage()
-    return decks.find((d) => d.id === deckId) || null
+    const deck = decks.find((d) => d.id === deckId) || null
+    return deck && deck.userId === userId ? deck : null
   }
 }
 
 export async function updateDeck(
   deckId: string,
-  updates: Partial<Deck>
+  updates: Partial<Deck>,
+  userId: string
 ): Promise<Deck> {
-  const deck = await getDeck(deckId)
+  const deck = await getDeck(deckId, userId)
   if (!deck) {
     throw new NotFoundError(`Deck with id ${deckId} not found`)
   }
@@ -263,8 +277,8 @@ export async function updateDeck(
   }
 }
 
-export async function deleteDeck(deckId: string): Promise<void> {
-  const deck = await getDeck(deckId)
+export async function deleteDeck(deckId: string, userId: string): Promise<void> {
+  const deck = await getDeck(deckId, userId)
   if (!deck) {
     throw new NotFoundError(`Deck with id ${deckId} not found`)
   }
@@ -314,10 +328,11 @@ export async function deleteDeck(deckId: string): Promise<void> {
 export async function createCard(
   deckId: string,
   frontText: string,
-  backText: string
+  backText: string,
+  userId: string
 ): Promise<Flashcard> {
   // Validate deck exists
-  const deck = await getDeck(deckId)
+  const deck = await getDeck(deckId, userId)
   if (!deck) {
     throw new NotFoundError(`Deck with id ${deckId} not found`)
   }
@@ -341,6 +356,7 @@ export async function createCard(
     backText: sanitizeInput(backText),
     order,
     createdDate: formatDate(),
+    userId,
   }
 
   if (useIndexedDB && db) {
@@ -384,7 +400,7 @@ export async function createCard(
   }
 }
 
-export async function getCardsByDeck(deckId: string): Promise<Flashcard[]> {
+export async function getCardsByDeck(deckId: string, userId: string): Promise<Flashcard[]> {
   if (useIndexedDB && db) {
     return new Promise((resolve, reject) => {
       const transaction = db!.transaction([STORES.CARDS], 'readonly')
@@ -393,7 +409,9 @@ export async function getCardsByDeck(deckId: string): Promise<Flashcard[]> {
       const request = index.getAll(deckId)
 
       request.onsuccess = () => {
-        const cards = (request.result as Flashcard[]).sort((a, b) => a.order - b.order)
+        const cards = (request.result as Flashcard[])
+          .filter((c) => c.userId === userId)
+          .sort((a, b) => a.order - b.order)
         resolve(cards)
       }
       request.onerror = () => reject(new StorageError('Failed to fetch cards'))
@@ -402,14 +420,15 @@ export async function getCardsByDeck(deckId: string): Promise<Flashcard[]> {
   } else {
     const allCards = getAllCardsFromStorage()
     return allCards
-      .filter((c) => c.deckId === deckId)
+      .filter((c) => c.deckId === deckId && c.userId === userId)
       .sort((a, b) => a.order - b.order)
   }
 }
 
 export async function updateCard(
   cardId: string,
-  updates: Partial<Flashcard>
+  updates: Partial<Flashcard>,
+  userId: string
 ): Promise<Flashcard> {
   if (useIndexedDB && db) {
     return new Promise((resolve, reject) => {
@@ -419,7 +438,7 @@ export async function updateCard(
 
       request.onsuccess = () => {
         const card = request.result as Flashcard | undefined
-        if (!card) {
+        if (!card || card.userId !== userId) {
           reject(new NotFoundError(`Card with id ${cardId} not found`))
           return
         }
@@ -457,7 +476,7 @@ export async function updateCard(
   } else {
     const allCards = getAllCardsFromStorage()
     const card = allCards.find((c) => c.id === cardId)
-    if (!card) {
+    if (!card || card.userId !== userId) {
       throw new NotFoundError(`Card with id ${cardId} not found`)
     }
 
@@ -475,6 +494,7 @@ export async function updateCard(
       deckId: card.deckId,
       order: card.order,
       createdDate: card.createdDate,
+      userId: card.userId,
     }
 
     const index = allCards.findIndex((c) => c.id === cardId)
@@ -485,7 +505,7 @@ export async function updateCard(
   }
 }
 
-export async function deleteCard(cardId: string): Promise<void> {
+export async function deleteCard(cardId: string, userId: string): Promise<void> {
   if (useIndexedDB && db) {
     return new Promise((resolve, reject) => {
       const transaction = db!.transaction([STORES.CARDS, STORES.DECKS], 'readwrite')
@@ -494,7 +514,7 @@ export async function deleteCard(cardId: string): Promise<void> {
 
       getRequest.onsuccess = () => {
         const card = getRequest.result as Flashcard | undefined
-        if (!card) {
+        if (!card || card.userId !== userId) {
           reject(new NotFoundError(`Card with id ${cardId} not found`))
           return
         }
@@ -530,18 +550,18 @@ export async function deleteCard(cardId: string): Promise<void> {
   } else {
     const allCards = getAllCardsFromStorage()
     const card = allCards.find((c) => c.id === cardId)
-    if (!card) {
+    if (!card || card.userId !== userId) {
       throw new NotFoundError(`Card with id ${cardId} not found`)
     }
 
     const filtered = allCards.filter((c) => c.id !== cardId)
     saveAllCardsToStorage(filtered)
 
-    const deck = await getDeck(card.deckId)
+    const deck = await getDeck(card.deckId, userId)
     if (deck) {
       await updateDeck(card.deckId, {
         cardCount: Math.max(0, deck.cardCount - 1),
-      })
+      }, userId)
     }
   }
 }

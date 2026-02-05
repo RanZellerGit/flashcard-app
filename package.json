@@ -14,6 +14,7 @@
     "test:all": "npm run test && npm run test:integration && npm run test:e2e"
   },
   "dependencies": {
+    "@clerk/nextjs": "^6.37.3",
     "clsx": "^2.0.0",
     "next": "^16.0.0",
     "react": "^19.0.0",

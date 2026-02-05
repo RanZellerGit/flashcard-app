@@ -8,6 +8,7 @@ export interface Deck {
   createdDate: string // ISO 8601
   updatedDate: string // ISO 8601
   cardCount: number
+  userId: string // Clerk user ID
 }
 
 export interface Flashcard {
@@ -17,6 +18,7 @@ export interface Flashcard {
   backText: string
   order: number
   createdDate: string // ISO 8601
+  userId: string // Clerk user ID
 }
 
 export interface SessionState {
