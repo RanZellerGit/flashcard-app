@@ -284,7 +284,7 @@ export async function deleteDeck(deckId: string, userId: string): Promise<void> 
   }
 
   // Delete all cards in this deck
-  const cards = await getCardsByDeck(deckId)
+  const cards = await getCardsByDeck(deckId, userId)
   for (const card of cards) {
     if (useIndexedDB && db) {
       await new Promise<void>((resolve, reject) => {
@@ -346,7 +346,7 @@ export async function createCard(
   }
 
   // Get current card count to set order
-  const cards = await getCardsByDeck(deckId)
+  const cards = await getCardsByDeck(deckId, userId)
   const order = cards.length
 
   const card: Flashcard = {
@@ -394,7 +394,7 @@ export async function createCard(
       cardCount: deck.cardCount + 1,
       updatedDate: formatDate(),
     }
-    await updateDeck(deckId, updatedDeck)
+    await updateDeck(deckId, updatedDeck, userId)
 
     return card
   }
