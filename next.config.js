@@ -2,7 +2,6 @@
 const nextConfig = {
   // Performance & Production Optimizations
   reactStrictMode: true,
-  swcMinify: true,
 
   // Headers for caching optimization
   async headers() {
@@ -41,20 +40,9 @@ const nextConfig = {
     ]
   },
 
-  // Webpack configuration
-  webpack: (config, { isServer }) => {
-    config.watchOptions = {
-      ignored: ['**/node_modules', '**/.next', '**/tests'],
-    }
-
-    // Performance hints
-    config.performance = {
-      hints: 'warning',
-      maxEntrypointSize: 250000,
-      maxAssetSize: 250000,
-    }
-
-    return config
+  // Turbopack configuration for Next.js 16
+  turbopack: {
+    resolveAlias: {},
   },
 
   // Disable static optimization for better compatibility

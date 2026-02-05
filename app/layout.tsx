@@ -22,7 +22,7 @@ export default function RootLayout({
         await initializeStorage()
         setIsReady(true)
       } catch (error) {
-        console.error('Failed to initialize storage:', error)
+        console.error('Storage initialization error:', error)
         setIsReady(true) // Still show app even if storage init fails
       }
     }

@@ -1,5 +1,5 @@
 /**
- * Storage abstraction layer using IndexedDB and localStorage
+ * Storage abstraction layer using IndexedDB with localStorage fallback
  */
 
 import {
@@ -25,29 +25,58 @@ const STORES = {
   CARDS: 'cards',
 }
 const SESSION_KEY = 'flashcard-app-session'
+const FALLBACK_DECKS_KEY = 'flashcard-app-decks'
+const FALLBACK_CARDS_KEY = 'flashcard-app-cards'
 
 let db: IDBDatabase | null = null
+let useIndexedDB = false
 
 /**
- * Initialize IndexedDB database
+ * Check if IndexedDB is available
+ */
+function isIndexedDBAvailable(): boolean {
+  try {
+    const test = '__indexeddb_available__'
+    const storage = typeof window !== 'undefined' ? window.indexedDB : null
+    if (!storage) return false
+    const request = storage.open(test)
+    request.onsuccess = () => {
+      storage.deleteDatabase(test)
+    }
+    return true
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Initialize storage
  */
 export async function initializeStorage(): Promise<void> {
-  return new Promise((resolve, reject) => {
+  if (!isIndexedDBAvailable()) {
+    console.warn('IndexedDB not available. Using localStorage fallback.')
+    useIndexedDB = false
+    return
+  }
+
+  return new Promise((resolve) => {
     const request = indexedDB.open(DB_NAME, DB_VERSION)
 
     request.onerror = () => {
-      reject(new StorageError('Failed to open IndexedDB'))
+      console.warn('Failed to open IndexedDB. Using localStorage fallback.')
+      useIndexedDB = false
+      resolve()
     }
 
     request.onsuccess = () => {
       db = request.result
+      useIndexedDB = true
       resolve()
     }
 
     request.onupgradeneeded = (event) => {
       const database = (event.target as IDBOpenDBRequest).result
 
-      // Create decks store
       if (!database.objectStoreNames.contains(STORES.DECKS)) {
         const decksStore = database.createObjectStore(STORES.DECKS, {
           keyPath: 'id',
@@ -55,7 +84,6 @@ export async function initializeStorage(): Promise<void> {
         decksStore.createIndex('createdDate', 'createdDate', { unique: false })
       }
 
-      // Create cards store
       if (!database.objectStoreNames.contains(STORES.CARDS)) {
         const cardsStore = database.createObjectStore(STORES.CARDS, {
           keyPath: 'id',
@@ -67,13 +95,55 @@ export async function initializeStorage(): Promise<void> {
 }
 
 /**
- * Get database connection
+ * Get all decks from storage
  */
-function getDb(): IDBDatabase {
-  if (!db) {
-    throw new StorageError('Database not initialized. Call initializeStorage() first.')
+function getAllDecksFromStorage(): Deck[] {
+  try {
+    const stored = localStorage.getItem(FALLBACK_DECKS_KEY)
+    return stored ? JSON.parse(stored) : []
+  } catch {
+    return []
   }
-  return db
+}
+
+/**
+ * Save all decks to storage
+ */
+function saveAllDecksToStorage(decks: Deck[]): void {
+  try {
+    localStorage.setItem(FALLBACK_DECKS_KEY, JSON.stringify(decks))
+  } catch (error) {
+    if (error instanceof Error && error.name === 'QuotaExceededError') {
+      throw new StorageError('localStorage quota exceeded')
+    }
+    throw new StorageError('Failed to save decks')
+  }
+}
+
+/**
+ * Get all cards from storage
+ */
+function getAllCardsFromStorage(): Flashcard[] {
+  try {
+    const stored = localStorage.getItem(FALLBACK_CARDS_KEY)
+    return stored ? JSON.parse(stored) : []
+  } catch {
+    return []
+  }
+}
+
+/**
+ * Save all cards to storage
+ */
+function saveAllCardsToStorage(cards: Flashcard[]): void {
+  try {
+    localStorage.setItem(FALLBACK_CARDS_KEY, JSON.stringify(cards))
+  } catch (error) {
+    if (error instanceof Error && error.name === 'QuotaExceededError') {
+      throw new StorageError('localStorage quota exceeded')
+    }
+    throw new StorageError('Failed to save cards')
+  }
 }
 
 // ============================================================================
@@ -93,45 +163,62 @@ export async function createDeck(name: string): Promise<Deck> {
     cardCount: 0,
   }
 
-  return new Promise((resolve, reject) => {
-    const transaction = getDb().transaction([STORES.DECKS], 'readwrite')
-    const store = transaction.objectStore(STORES.DECKS)
-    const request = store.add(deck)
+  if (useIndexedDB && db) {
+    return new Promise((resolve, reject) => {
+      const transaction = db!.transaction([STORES.DECKS], 'readwrite')
+      const store = transaction.objectStore(STORES.DECKS)
+      const request = store.add(deck)
 
-    request.onsuccess = () => resolve(deck)
-    request.onerror = () => reject(new StorageError('Failed to create deck'))
-    transaction.onerror = () => reject(new StorageError('Transaction failed'))
-  })
+      request.onsuccess = () => resolve(deck)
+      request.onerror = () => reject(new StorageError('Failed to create deck'))
+      transaction.onerror = () => reject(new StorageError('Transaction failed'))
+    })
+  } else {
+    const decks = getAllDecksFromStorage()
+    decks.push(deck)
+    saveAllDecksToStorage(decks)
+    return deck
+  }
 }
 
 export async function getAllDecks(): Promise<Deck[]> {
-  return new Promise((resolve, reject) => {
-    const transaction = getDb().transaction([STORES.DECKS], 'readonly')
-    const store = transaction.objectStore(STORES.DECKS)
-    const index = store.index('createdDate')
-    const request = index.getAll()
+  if (useIndexedDB && db) {
+    return new Promise((resolve, reject) => {
+      const transaction = db!.transaction([STORES.DECKS], 'readonly')
+      const store = transaction.objectStore(STORES.DECKS)
+      const index = store.index('createdDate')
+      const request = index.getAll()
 
-    request.onsuccess = () => {
-      const decks = (request.result as Deck[]).reverse() // newest first
-      resolve(decks)
-    }
-    request.onerror = () => reject(new StorageError('Failed to fetch decks'))
-    transaction.onerror = () => reject(new StorageError('Transaction failed'))
-  })
+      request.onsuccess = () => {
+        const decks = (request.result as Deck[]).reverse() // newest first
+        resolve(decks)
+      }
+      request.onerror = () => reject(new StorageError('Failed to fetch decks'))
+      transaction.onerror = () => reject(new StorageError('Transaction failed'))
+    })
+  } else {
+    const decks = getAllDecksFromStorage()
+    return decks.reverse() // newest first
+  }
 }
 
 export async function getDeck(deckId: string): Promise<Deck | null> {
-  return new Promise((resolve, reject) => {
-    const transaction = getDb().transaction([STORES.DECKS], 'readonly')
-    const store = transaction.objectStore(STORES.DECKS)
-    const request = store.get(deckId)
+  if (useIndexedDB && db) {
+    return new Promise((resolve, reject) => {
+      const transaction = db!.transaction([STORES.DECKS], 'readonly')
+      const store = transaction.objectStore(STORES.DECKS)
+      const request = store.get(deckId)
 
-    request.onsuccess = () => {
-      resolve(request.result || null)
-    }
-    request.onerror = () => reject(new StorageError('Failed to fetch deck'))
-    transaction.onerror = () => reject(new StorageError('Transaction failed'))
-  })
+      request.onsuccess = () => {
+        resolve(request.result || null)
+      }
+      request.onerror = () => reject(new StorageError('Failed to fetch deck'))
+      transaction.onerror = () => reject(new StorageError('Transaction failed'))
+    })
+  } else {
+    const decks = getAllDecksFromStorage()
+    return decks.find((d) => d.id === deckId) || null
+  }
 }
 
 export async function updateDeck(
@@ -155,15 +242,25 @@ export async function updateDeck(
     updatedDate: formatDate(),
   }
 
-  return new Promise((resolve, reject) => {
-    const transaction = getDb().transaction([STORES.DECKS], 'readwrite')
-    const store = transaction.objectStore(STORES.DECKS)
-    const request = store.put(updated)
+  if (useIndexedDB && db) {
+    return new Promise((resolve, reject) => {
+      const transaction = db!.transaction([STORES.DECKS], 'readwrite')
+      const store = transaction.objectStore(STORES.DECKS)
+      const request = store.put(updated)
 
-    request.onsuccess = () => resolve(updated)
-    request.onerror = () => reject(new StorageError('Failed to update deck'))
-    transaction.onerror = () => reject(new StorageError('Transaction failed'))
-  })
+      request.onsuccess = () => resolve(updated)
+      request.onerror = () => reject(new StorageError('Failed to update deck'))
+      transaction.onerror = () => reject(new StorageError('Transaction failed'))
+    })
+  } else {
+    const decks = getAllDecksFromStorage()
+    const index = decks.findIndex((d) => d.id === deckId)
+    if (index !== -1) {
+      decks[index] = updated
+      saveAllDecksToStorage(decks)
+    }
+    return updated
+  }
 }
 
 export async function deleteDeck(deckId: string): Promise<void> {
@@ -175,27 +272,39 @@ export async function deleteDeck(deckId: string): Promise<void> {
   // Delete all cards in this deck
   const cards = await getCardsByDeck(deckId)
   for (const card of cards) {
-    await new Promise<void>((resolve, reject) => {
-      const transaction = getDb().transaction([STORES.CARDS], 'readwrite')
-      const store = transaction.objectStore(STORES.CARDS)
-      const request = store.delete(card.id)
+    if (useIndexedDB && db) {
+      await new Promise<void>((resolve, reject) => {
+        const transaction = db!.transaction([STORES.CARDS], 'readwrite')
+        const store = transaction.objectStore(STORES.CARDS)
+        const request = store.delete(card.id)
 
-      request.onsuccess = () => resolve()
-      request.onerror = () => reject(new StorageError('Failed to delete card'))
-      transaction.onerror = () => reject(new StorageError('Transaction failed'))
-    })
+        request.onsuccess = () => resolve()
+        request.onerror = () => reject(new StorageError('Failed to delete card'))
+        transaction.onerror = () => reject(new StorageError('Transaction failed'))
+      })
+    } else {
+      const allCards = getAllCardsFromStorage()
+      const filtered = allCards.filter((c) => c.id !== card.id)
+      saveAllCardsToStorage(filtered)
+    }
   }
 
   // Delete deck
-  return new Promise((resolve, reject) => {
-    const transaction = getDb().transaction([STORES.DECKS], 'readwrite')
-    const store = transaction.objectStore(STORES.DECKS)
-    const request = store.delete(deckId)
+  if (useIndexedDB && db) {
+    return new Promise((resolve, reject) => {
+      const transaction = db!.transaction([STORES.DECKS], 'readwrite')
+      const store = transaction.objectStore(STORES.DECKS)
+      const request = store.delete(deckId)
 
-    request.onsuccess = () => resolve()
-    request.onerror = () => reject(new StorageError('Failed to delete deck'))
-    transaction.onerror = () => reject(new StorageError('Transaction failed'))
-  })
+      request.onsuccess = () => resolve()
+      request.onerror = () => reject(new StorageError('Failed to delete deck'))
+      transaction.onerror = () => reject(new StorageError('Transaction failed'))
+    })
+  } else {
+    const decks = getAllDecksFromStorage()
+    const filtered = decks.filter((d) => d.id !== deckId)
+    saveAllDecksToStorage(filtered)
+  }
 }
 
 // ============================================================================
@@ -234,141 +343,207 @@ export async function createCard(
     createdDate: formatDate(),
   }
 
-  return new Promise((resolve, reject) => {
-    const transaction = getDb().transaction(
-      [STORES.CARDS, STORES.DECKS],
-      'readwrite'
-    )
+  if (useIndexedDB && db) {
+    return new Promise((resolve, reject) => {
+      const transaction = db!.transaction([STORES.CARDS, STORES.DECKS], 'readwrite')
 
-    // Add card
-    const cardsStore = transaction.objectStore(STORES.CARDS)
-    const addRequest = cardsStore.add(card)
+      // Add card
+      const cardsStore = transaction.objectStore(STORES.CARDS)
+      const addRequest = cardsStore.add(card)
 
-    addRequest.onsuccess = async () => {
-      // Update deck card count
-      const decksStore = transaction.objectStore(STORES.DECKS)
-      const updatedDeck = { ...deck, cardCount: deck.cardCount + 1, updatedDate: formatDate() }
-      const updateRequest = decksStore.put(updatedDeck)
+      addRequest.onsuccess = () => {
+        // Update deck card count
+        const decksStore = transaction.objectStore(STORES.DECKS)
+        const updatedDeck = {
+          ...deck,
+          cardCount: deck.cardCount + 1,
+          updatedDate: formatDate(),
+        }
+        const updateRequest = decksStore.put(updatedDeck)
 
-      updateRequest.onsuccess = () => resolve(card)
-      updateRequest.onerror = () => reject(new StorageError('Failed to update deck'))
+        updateRequest.onsuccess = () => resolve(card)
+        updateRequest.onerror = () => reject(new StorageError('Failed to update deck'))
+      }
+
+      addRequest.onerror = () => reject(new StorageError('Failed to create card'))
+      transaction.onerror = () => reject(new StorageError('Transaction failed'))
+    })
+  } else {
+    const allCards = getAllCardsFromStorage()
+    allCards.push(card)
+    saveAllCardsToStorage(allCards)
+
+    const updatedDeck = {
+      ...deck,
+      cardCount: deck.cardCount + 1,
+      updatedDate: formatDate(),
     }
+    await updateDeck(deckId, updatedDeck)
 
-    addRequest.onerror = () => reject(new StorageError('Failed to create card'))
-    transaction.onerror = () => reject(new StorageError('Transaction failed'))
-  })
+    return card
+  }
 }
 
 export async function getCardsByDeck(deckId: string): Promise<Flashcard[]> {
-  return new Promise((resolve, reject) => {
-    const transaction = getDb().transaction([STORES.CARDS], 'readonly')
-    const store = transaction.objectStore(STORES.CARDS)
-    const index = store.index('deckId')
-    const request = index.getAll(deckId)
+  if (useIndexedDB && db) {
+    return new Promise((resolve, reject) => {
+      const transaction = db!.transaction([STORES.CARDS], 'readonly')
+      const store = transaction.objectStore(STORES.CARDS)
+      const index = store.index('deckId')
+      const request = index.getAll(deckId)
 
-    request.onsuccess = () => {
-      const cards = (request.result as Flashcard[]).sort((a, b) => a.order - b.order)
-      resolve(cards)
-    }
-    request.onerror = () => reject(new StorageError('Failed to fetch cards'))
-    transaction.onerror = () => reject(new StorageError('Transaction failed'))
-  })
+      request.onsuccess = () => {
+        const cards = (request.result as Flashcard[]).sort((a, b) => a.order - b.order)
+        resolve(cards)
+      }
+      request.onerror = () => reject(new StorageError('Failed to fetch cards'))
+      transaction.onerror = () => reject(new StorageError('Transaction failed'))
+    })
+  } else {
+    const allCards = getAllCardsFromStorage()
+    return allCards
+      .filter((c) => c.deckId === deckId)
+      .sort((a, b) => a.order - b.order)
+  }
 }
 
 export async function updateCard(
   cardId: string,
   updates: Partial<Flashcard>
 ): Promise<Flashcard> {
-  return new Promise((resolve, reject) => {
-    const transaction = getDb().transaction([STORES.CARDS], 'readonly')
-    const store = transaction.objectStore(STORES.CARDS)
-    const request = store.get(cardId)
+  if (useIndexedDB && db) {
+    return new Promise((resolve, reject) => {
+      const transaction = db!.transaction([STORES.CARDS], 'readonly')
+      const store = transaction.objectStore(STORES.CARDS)
+      const request = store.get(cardId)
 
-    request.onsuccess = () => {
-      const card = request.result as Flashcard | undefined
-      if (!card) {
-        reject(new NotFoundError(`Card with id ${cardId} not found`))
-        return
+      request.onsuccess = () => {
+        const card = request.result as Flashcard | undefined
+        if (!card) {
+          reject(new NotFoundError(`Card with id ${cardId} not found`))
+          return
+        }
+
+        if (updates.frontText !== undefined && !validateCardText(updates.frontText)) {
+          reject(new ValidationError('Front text must be 1-500 characters'))
+          return
+        }
+        if (updates.backText !== undefined && !validateCardText(updates.backText)) {
+          reject(new ValidationError('Back text must be 1-500 characters'))
+          return
+        }
+
+        const updated: Flashcard = {
+          ...card,
+          ...updates,
+          id: card.id,
+          deckId: card.deckId,
+          order: card.order,
+          createdDate: card.createdDate,
+        }
+
+        const writeTransaction = db!.transaction([STORES.CARDS], 'readwrite')
+        const writeStore = writeTransaction.objectStore(STORES.CARDS)
+        const writeRequest = writeStore.put(updated)
+
+        writeRequest.onsuccess = () => resolve(updated)
+        writeRequest.onerror = () => reject(new StorageError('Failed to update card'))
+        writeTransaction.onerror = () => reject(new StorageError('Transaction failed'))
       }
 
-      if (updates.frontText !== undefined && !validateCardText(updates.frontText)) {
-        reject(new ValidationError('Front text must be 1-500 characters'))
-        return
-      }
-      if (updates.backText !== undefined && !validateCardText(updates.backText)) {
-        reject(new ValidationError('Back text must be 1-500 characters'))
-        return
-      }
-
-      const updated: Flashcard = {
-        ...card,
-        ...updates,
-        id: card.id, // immutable
-        deckId: card.deckId, // immutable
-        order: card.order, // immutable
-        createdDate: card.createdDate, // immutable
-      }
-
-      const writeTransaction = getDb().transaction([STORES.CARDS], 'readwrite')
-      const writeStore = writeTransaction.objectStore(STORES.CARDS)
-      const writeRequest = writeStore.put(updated)
-
-      writeRequest.onsuccess = () => resolve(updated)
-      writeRequest.onerror = () => reject(new StorageError('Failed to update card'))
-      writeTransaction.onerror = () => reject(new StorageError('Transaction failed'))
+      request.onerror = () => reject(new StorageError('Failed to fetch card'))
+      transaction.onerror = () => reject(new StorageError('Transaction failed'))
+    })
+  } else {
+    const allCards = getAllCardsFromStorage()
+    const card = allCards.find((c) => c.id === cardId)
+    if (!card) {
+      throw new NotFoundError(`Card with id ${cardId} not found`)
     }
 
-    request.onerror = () => reject(new StorageError('Failed to fetch card'))
-    transaction.onerror = () => reject(new StorageError('Transaction failed'))
-  })
+    if (updates.frontText !== undefined && !validateCardText(updates.frontText)) {
+      throw new ValidationError('Front text must be 1-500 characters')
+    }
+    if (updates.backText !== undefined && !validateCardText(updates.backText)) {
+      throw new ValidationError('Back text must be 1-500 characters')
+    }
+
+    const updated: Flashcard = {
+      ...card,
+      ...updates,
+      id: card.id,
+      deckId: card.deckId,
+      order: card.order,
+      createdDate: card.createdDate,
+    }
+
+    const index = allCards.findIndex((c) => c.id === cardId)
+    allCards[index] = updated
+    saveAllCardsToStorage(allCards)
+
+    return updated
+  }
 }
 
 export async function deleteCard(cardId: string): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const transaction = getDb().transaction([STORES.CARDS, STORES.DECKS], 'readwrite')
-    const cardsStore = transaction.objectStore(STORES.CARDS)
-    const getRequest = cardsStore.get(cardId)
+  if (useIndexedDB && db) {
+    return new Promise((resolve, reject) => {
+      const transaction = db!.transaction([STORES.CARDS, STORES.DECKS], 'readwrite')
+      const cardsStore = transaction.objectStore(STORES.CARDS)
+      const getRequest = cardsStore.get(cardId)
 
-    getRequest.onsuccess = () => {
-      const card = getRequest.result as Flashcard | undefined
-      if (!card) {
-        reject(new NotFoundError(`Card with id ${cardId} not found`))
-        return
-      }
-
-      // Delete the card
-      const deleteRequest = cardsStore.delete(cardId)
-
-      deleteRequest.onsuccess = async () => {
-        // Update deck card count
-        const decksStore = transaction.objectStore(STORES.DECKS)
-        const deckRequest = decksStore.get(card.deckId)
-
-        deckRequest.onsuccess = () => {
-          const deck = deckRequest.result as Deck
-          const updated = {
-            ...deck,
-            cardCount: Math.max(0, deck.cardCount - 1),
-            updatedDate: formatDate(),
-          }
-          const deckUpdateRequest = decksStore.put(updated)
-
-          deckUpdateRequest.onsuccess = () => {
-            // Renumber remaining cards
-            // This is handled by the application layer for simplicity
-            resolve()
-          }
-          deckUpdateRequest.onerror = () => reject(new StorageError('Failed to update deck'))
+      getRequest.onsuccess = () => {
+        const card = getRequest.result as Flashcard | undefined
+        if (!card) {
+          reject(new NotFoundError(`Card with id ${cardId} not found`))
+          return
         }
-        deckRequest.onerror = () => reject(new StorageError('Failed to fetch deck'))
+
+        const deleteRequest = cardsStore.delete(cardId)
+
+        deleteRequest.onsuccess = () => {
+          const decksStore = transaction.objectStore(STORES.DECKS)
+          const deckRequest = decksStore.get(card.deckId)
+
+          deckRequest.onsuccess = () => {
+            const deck = deckRequest.result as Deck
+            const updated = {
+              ...deck,
+              cardCount: Math.max(0, deck.cardCount - 1),
+              updatedDate: formatDate(),
+            }
+            const deckUpdateRequest = decksStore.put(updated)
+
+            deckUpdateRequest.onsuccess = () => resolve()
+            deckUpdateRequest.onerror = () =>
+              reject(new StorageError('Failed to update deck'))
+          }
+          deckRequest.onerror = () => reject(new StorageError('Failed to fetch deck'))
+        }
+
+        deleteRequest.onerror = () => reject(new StorageError('Failed to delete card'))
       }
 
-      deleteRequest.onerror = () => reject(new StorageError('Failed to delete card'))
+      getRequest.onerror = () => reject(new StorageError('Failed to fetch card'))
+      transaction.onerror = () => reject(new StorageError('Transaction failed'))
+    })
+  } else {
+    const allCards = getAllCardsFromStorage()
+    const card = allCards.find((c) => c.id === cardId)
+    if (!card) {
+      throw new NotFoundError(`Card with id ${cardId} not found`)
     }
 
-    getRequest.onerror = () => reject(new StorageError('Failed to fetch card'))
-    transaction.onerror = () => reject(new StorageError('Transaction failed'))
-  })
+    const filtered = allCards.filter((c) => c.id !== cardId)
+    saveAllCardsToStorage(filtered)
+
+    const deck = await getDeck(card.deckId)
+    if (deck) {
+      await updateDeck(card.deckId, {
+        cardCount: Math.max(0, deck.cardCount - 1),
+      })
+    }
+  }
 }
 
 // ============================================================================
