@@ -4,7 +4,6 @@ import { useState, useEffect, useRef } from 'react'
 import { Flashcard } from '@/lib/types'
 import { StudyCard } from './StudyCard'
 import { ExitConfirmationModal } from './ExitConfirmationModal'
-import { useSession } from '@/lib/context/SessionContext'
 
 interface StudyModeProps {
   deckId: string
@@ -22,12 +21,7 @@ export function StudyMode({
   cards,
   onExit,
 }: StudyModeProps) {
-  const { session, setStudySession } = useSession()
-  const [cardIndex, setCardIndex] = useState(
-    session.currentStudySession?.deckId === deckId
-      ? session.currentStudySession?.cardIndex ?? 0
-      : 0
-  )
+  const [cardIndex, setCardIndex] = useState(0)
   const [isFlipped, setIsFlipped] = useState(false)
   const [isCompleted, setIsCompleted] = useState(false)
   const [showExitConfirm, setShowExitConfirm] = useState(false)
@@ -37,18 +31,6 @@ export function StudyMode({
   useEffect(() => {
     cardsLengthRef.current = cards.length
   }, [cards.length])
-
-  // Save session progress when card index changes
-  useEffect(() => {
-    if (cardIndex < cards.length) {
-      setStudySession({
-        deckId,
-        cardIndex,
-        isFlipped,
-      })
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cardIndex])
 
   // Handle keyboard shortcuts
   useEffect(() => {
@@ -102,8 +84,7 @@ export function StudyMode({
     setShowExitConfirm(true)
   }
 
-  const handleConfirmExit = async () => {
-    await setStudySession(undefined)
+  const handleConfirmExit = () => {
     onExit()
   }
 

@@ -15,7 +15,9 @@
   },
   "dependencies": {
     "@clerk/nextjs": "^6.37.3",
+    "@neondatabase/serverless": "^1.0.2",
     "clsx": "^2.0.0",
+    "drizzle-orm": "^0.45.1",
     "next": "^16.0.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
@@ -32,6 +34,7 @@
     "@types/react-dom": "^18.2.0",
     "@vitejs/plugin-react": "^4.2.0",
     "autoprefixer": "^10.4.16",
+    "drizzle-kit": "^0.31.8",
     "eslint": "^9.0.0",
     "eslint-config-next": "^16.0.0",
     "fake-indexeddb": "^6.2.5",
