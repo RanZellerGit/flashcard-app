@@ -41,5 +41,9 @@ export async function GET(request: Request, { params }: RouteParams) {
     userId: row.userId,
   }))
 
-  return NextResponse.json(cardList)
+  return NextResponse.json(cardList, {
+    headers: {
+      'Cache-Control': 'no-store, no-cache, must-revalidate',
+    },
+  })
 }

@@ -26,7 +26,11 @@ export async function GET() {
     userId: row.userId,
   }))
 
-  return NextResponse.json(deckList)
+  return NextResponse.json(deckList, {
+    headers: {
+      'Cache-Control': 'no-store, no-cache, must-revalidate',
+    },
+  })
 }
 
 export async function POST(request: Request) {

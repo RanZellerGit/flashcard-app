@@ -32,6 +32,10 @@ export async function GET(request: Request, { params }: RouteParams) {
     updatedDate: deck.updatedDate.toISOString(),
     cardCount: deck.cardCount,
     userId: deck.userId,
+  }, {
+    headers: {
+      'Cache-Control': 'no-store, no-cache, must-revalidate',
+    },
   })
 }
 

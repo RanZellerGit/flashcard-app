@@ -36,7 +36,9 @@ export async function createDeck(name: string, userId: string): Promise<Deck> {
 }
 
 export async function getAllDecks(userId: string): Promise<Deck[]> {
-  const response = await fetch('/api/decks')
+  const response = await fetch('/api/decks', {
+    cache: 'no-store',
+  })
 
   if (!response.ok) {
     throw new StorageError('Failed to fetch decks')
@@ -46,7 +48,9 @@ export async function getAllDecks(userId: string): Promise<Deck[]> {
 }
 
 export async function getDeck(deckId: string, userId: string): Promise<Deck | null> {
-  const response = await fetch(`/api/decks/${deckId}`)
+  const response = await fetch(`/api/decks/${deckId}`, {
+    cache: 'no-store',
+  })
 
   if (response.status === 404) {
     return null
@@ -131,7 +135,9 @@ export async function createCard(
 }
 
 export async function getCardsByDeck(deckId: string, userId: string): Promise<Flashcard[]> {
-  const response = await fetch(`/api/cards-by-deck/${deckId}`)
+  const response = await fetch(`/api/cards-by-deck/${deckId}`, {
+    cache: 'no-store',
+  })
 
   if (response.status === 404) {
     return []
