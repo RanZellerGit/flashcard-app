@@ -1,6 +1,5 @@
 import { ClerkProvider } from '@clerk/nextjs'
 import { Inter } from 'next/font/google'
-import Script from 'next/script'
 import './globals.css'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 
@@ -19,15 +18,16 @@ export default function RootLayout({
   return (
     <ClerkProvider>
       <html lang="en">
-        <body className={inter.className}>
+        <head>
           {process.env.NEXT_PUBLIC_ADSENSE_PUB_ID && (
-            <Script
+            <script
               async
               src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${process.env.NEXT_PUBLIC_ADSENSE_PUB_ID}`}
               crossOrigin="anonymous"
-              strategy="afterInteractive"
             />
           )}
+        </head>
+        <body className={inter.className}>
           <ErrorBoundary>
             {children}
           </ErrorBoundary>

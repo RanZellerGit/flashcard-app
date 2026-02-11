@@ -35,8 +35,19 @@ export function AdBanner({
   }, [])
 
   const publisherId = process.env.NEXT_PUBLIC_ADSENSE_PUB_ID
+  const isDev = process.env.NODE_ENV === 'development'
 
   if (!publisherId) return null
+
+  if (isDev) {
+    return (
+      <div className={`ad-container ${className}`}>
+        <div className="flex items-center justify-center border-2 border-dashed border-gray-300 rounded-lg bg-gray-50 py-4 text-sm text-gray-400">
+          Ad Space — {adSlot}
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className={`ad-container ${className}`}>
