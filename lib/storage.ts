@@ -134,6 +134,36 @@ export async function createCard(
   return response.json()
 }
 
+export async function getRandomCards(): Promise<Flashcard[]> {
+  const response = await fetch('/api/cards/random', {
+    cache: 'no-store',
+  })
+
+  if (!response.ok) {
+    throw new StorageError('Failed to fetch random cards')
+  }
+
+  return response.json()
+}
+
+export async function markCardAsKnown(cardId: string, userId: string): Promise<Flashcard> {
+  const response = await fetch(`/api/cards/${cardId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ isKnown: true }),
+  })
+
+  if (response.status === 404) {
+    throw new NotFoundError(`Card with id ${cardId} not found`)
+  }
+
+  if (!response.ok) {
+    throw new StorageError('Failed to mark card as known')
+  }
+
+  return response.json()
+}
+
 export async function getCardsByDeck(deckId: string, userId: string): Promise<Flashcard[]> {
   const response = await fetch(`/api/cards-by-deck/${deckId}`, {
     cache: 'no-store',

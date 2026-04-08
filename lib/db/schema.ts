@@ -1,4 +1,4 @@
-import { pgTable, varchar, integer, timestamp, index } from 'drizzle-orm/pg-core'
+import { pgTable, varchar, integer, timestamp, boolean, index } from 'drizzle-orm/pg-core'
 
 export const decks = pgTable(
   'decks',
@@ -26,6 +26,7 @@ export const flashcards = pgTable(
     frontText: varchar('front_text', { length: 500 }).notNull(),
     backText: varchar('back_text', { length: 500 }).notNull(),
     cardOrder: integer('card_order').notNull().default(0),
+    isKnown: boolean('is_known').notNull().default(false),
     createdDate: timestamp('created_date', { withTimezone: true }).notNull().defaultNow(),
     userId: varchar('user_id', { length: 255 }).notNull(),
   },

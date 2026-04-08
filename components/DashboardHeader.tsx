@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { UserButton } from '@clerk/nextjs'
 
 /**
@@ -21,6 +22,12 @@ export function DashboardHeader({
         </div>
 
         <div className="flex items-center gap-4">
+          <Link
+            href="/swipe"
+            className="px-4 py-2 bg-purple-600 text-white font-medium rounded-lg hover:bg-purple-700 transition"
+          >
+            Practice
+          </Link>
           <button
             onClick={onCreateDeck}
             className="px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition"
