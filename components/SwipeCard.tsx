@@ -13,6 +13,7 @@ const TAP_THRESHOLD = 10
 
 export function SwipeCard({ card, onSwipe }: SwipeCardProps) {
   const [isFlipped, setIsFlipped] = useState(false)
+  const [isSpeaking, setIsSpeaking] = useState(false)
   const [deltaX, setDeltaX] = useState(0)
   const [isSwiping, setIsSwiping] = useState(false)
   const [isExiting, setIsExiting] = useState<'left' | 'right' | null>(null)
@@ -21,12 +22,36 @@ export function SwipeCard({ card, onSwipe }: SwipeCardProps) {
   const isDraggingRef = useRef(false)
   const cardRef = useRef<HTMLDivElement>(null)
 
-  // Reset flip state when card changes
+  // Reset state when card changes
   useEffect(() => {
     setIsFlipped(false)
     setDeltaX(0)
     setIsExiting(null)
+    window.speechSynthesis?.cancel()
+    setIsSpeaking(false)
   }, [card.id])
+
+  // Stop speech on unmount
+  useEffect(() => {
+    return () => { window.speechSynthesis?.cancel() }
+  }, [])
+
+  const handleSpeak = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    const synth = window.speechSynthesis
+    if (!synth) return
+    if (isSpeaking) {
+      synth.cancel()
+      setIsSpeaking(false)
+      return
+    }
+    const text = isFlipped ? card.backText : card.frontText
+    const utterance = new SpeechSynthesisUtterance(text)
+    utterance.onend = () => setIsSpeaking(false)
+    utterance.onerror = () => setIsSpeaking(false)
+    synth.speak(utterance)
+    setIsSpeaking(true)
+  }
 
   // Prevent page scroll during swipe
   useEffect(() => {
@@ -136,7 +161,10 @@ export function SwipeCard({ card, onSwipe }: SwipeCardProps) {
             <p className="text-2xl font-semibold text-gray-900 text-center leading-snug">
               {card.frontText}
             </p>
-            <p className="text-xs text-gray-400 mt-8">Tap to reveal answer</p>
+            <div className="flex items-center gap-3 mt-8">
+              <p className="text-xs text-gray-400">Tap to reveal answer</p>
+              <SpeakButton isSpeaking={isSpeaking} onClick={handleSpeak} />
+            </div>
           </div>
 
           {/* Back */}
@@ -150,6 +178,9 @@ export function SwipeCard({ card, onSwipe }: SwipeCardProps) {
             <p className="text-2xl font-semibold text-gray-900 text-center leading-snug">
               {card.backText}
             </p>
+            <div className="mt-8">
+              <SpeakButton isSpeaking={isSpeaking} onClick={handleSpeak} />
+            </div>
           </div>
         </div>
 
@@ -182,5 +213,35 @@ export function SwipeCard({ card, onSwipe }: SwipeCardProps) {
         )}
       </div>
     </div>
+  )
+}
+
+function SpeakButton({
+  isSpeaking,
+  onClick,
+}: {
+  isSpeaking: boolean
+  onClick: (e: React.MouseEvent) => void
+}) {
+  return (
+    <button
+      onClick={onClick}
+      onPointerDown={(e) => e.stopPropagation()}
+      className={`p-2 rounded-full transition ${isSpeaking ? 'bg-blue-100 text-blue-600' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
+      aria-label={isSpeaking ? 'Stop reading' : 'Read aloud'}
+      title={isSpeaking ? 'Stop' : 'Read aloud'}
+    >
+      {isSpeaking ? (
+        <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+          <rect x="6" y="6" width="4" height="12" rx="1" />
+          <rect x="14" y="6" width="4" height="12" rx="1" />
+        </svg>
+      ) : (
+        <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/>
+          <path d="M14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+        </svg>
+      )}
+    </button>
   )
 }
