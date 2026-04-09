@@ -15,7 +15,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
 
   const { id } = await params
   const body = await request.json()
-  const { frontText, backText, isKnown } = body
+  const { frontText, backText, isKnown, incrementKnown } = body
 
   // Verify ownership
   const [existing] = await db
@@ -42,7 +42,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     )
   }
 
-  const updates: { frontText?: string; backText?: string; isKnown?: boolean } = {}
+  const updates: { frontText?: string; backText?: string; isKnown?: boolean; knownCount?: number } = {}
   if (frontText !== undefined) {
     updates.frontText = sanitizeInput(frontText)
   }
@@ -51,6 +51,13 @@ export async function PATCH(request: Request, { params }: RouteParams) {
   }
   if (isKnown !== undefined) {
     updates.isKnown = Boolean(isKnown)
+  }
+  if (incrementKnown === true) {
+    const newCount = existing.knownCount + 1
+    updates.knownCount = newCount
+    if (newCount >= 10) {
+      updates.isKnown = true
+    }
   }
 
   if (Object.keys(updates).length > 0) {
@@ -73,6 +80,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     backText: updated.backText,
     order: updated.cardOrder,
     isKnown: updated.isKnown,
+    knownCount: updated.knownCount,
     createdDate: updated.createdDate.toISOString(),
     userId: updated.userId,
   })

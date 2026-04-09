@@ -150,7 +150,7 @@ export async function markCardAsKnown(cardId: string, userId: string): Promise<F
   const response = await fetch(`/api/cards/${cardId}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ isKnown: true }),
+    body: JSON.stringify({ incrementKnown: true }),
   })
 
   if (response.status === 404) {

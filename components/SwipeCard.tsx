@@ -155,6 +155,11 @@ export function SwipeCard({ card, onSwipe }: SwipeCardProps) {
             className="absolute inset-0 rounded-2xl bg-white flex flex-col items-center justify-center p-8"
             style={{ backfaceVisibility: 'hidden' }}
           >
+            <div className="absolute top-4 right-4">
+              <span className="text-xs font-semibold text-green-600 bg-green-50 px-2 py-1 rounded-full">
+                ✓ {card.knownCount}/10
+              </span>
+            </div>
             <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-4">
               Question
             </p>
@@ -172,6 +177,11 @@ export function SwipeCard({ card, onSwipe }: SwipeCardProps) {
             className="absolute inset-0 rounded-2xl bg-blue-50 flex flex-col items-center justify-center p-8"
             style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
           >
+            <div className="absolute top-4 right-4">
+              <span className="text-xs font-semibold text-green-600 bg-green-50 px-2 py-1 rounded-full">
+                ✓ {card.knownCount}/10
+              </span>
+            </div>
             <p className="text-xs font-semibold uppercase tracking-widest text-blue-400 mb-4">
               Answer
             </p>

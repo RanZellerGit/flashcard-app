@@ -27,6 +27,7 @@ export const flashcards = pgTable(
     backText: varchar('back_text', { length: 500 }).notNull(),
     cardOrder: integer('card_order').notNull().default(0),
     isKnown: boolean('is_known').notNull().default(false),
+    knownCount: integer('known_count').notNull().default(0),
     createdDate: timestamp('created_date', { withTimezone: true }).notNull().defaultNow(),
     userId: varchar('user_id', { length: 255 }).notNull(),
   },

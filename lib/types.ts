@@ -18,6 +18,7 @@ export interface Flashcard {
   backText: string
   order: number
   isKnown: boolean
+  knownCount: number
   createdDate: string // ISO 8601
   userId: string // Clerk user ID
 }

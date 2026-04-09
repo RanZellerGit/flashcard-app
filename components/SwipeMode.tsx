@@ -126,15 +126,13 @@ export function SwipeMode({ userId, onExit }: SwipeModeProps) {
           <div className="text-6xl mb-4">🎉</div>
           <h2 className="text-3xl font-bold text-gray-900 mb-2">Session Complete!</h2>
           <p className="text-gray-600 mb-2">
-            You marked{' '}
+            You swiped{' '}
             <span className="font-semibold text-green-600">{knownCount}</span> card
             {knownCount !== 1 ? 's' : ''} as known.
           </p>
-          {knownCount > 0 && (
-            <p className="text-sm text-gray-500 mb-8">
-              Those cards won't appear in future sessions.
-            </p>
-          )}
+          <p className="text-sm text-gray-500 mb-8">
+            Cards disappear permanently after 10 correct swipes.
+          </p>
           <button
             onClick={onExit}
             className="w-full px-6 py-3 bg-purple-600 text-white font-medium rounded-lg hover:bg-purple-700 transition"

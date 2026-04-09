@@ -25,6 +25,7 @@ export async function GET() {
       backText: card.backText,
       order: card.cardOrder,
       isKnown: card.isKnown,
+      knownCount: card.knownCount,
       createdDate: card.createdDate.toISOString(),
       userId: card.userId,
     }))
