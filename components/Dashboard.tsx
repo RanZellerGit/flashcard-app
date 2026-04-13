@@ -19,14 +19,24 @@ interface DashboardProps {
 export function Dashboard({ onCreateDeck, refreshTrigger = 0, userId }: DashboardProps) {
   const [decks, setDecks] = useState<Deck[]>([])
   const [loading, setLoading] = useState(true)
+  const [totalCards, setTotalCards] = useState(0)
+  const [masteredCards, setMasteredCards] = useState(0)
 
   // Load decks on mount and when refresh is triggered
   useEffect(() => {
     const loadDecks = async () => {
       try {
         setLoading(true)
-        const deckList = await getAllDecks(userId)
+        const [deckList, statsRes] = await Promise.all([
+          getAllDecks(userId),
+          fetch('/api/stats'),
+        ])
         setDecks(deckList)
+        if (statsRes.ok) {
+          const stats = await statsRes.json()
+          setTotalCards(stats.totalCards)
+          setMasteredCards(stats.masteredCards)
+        }
       } catch (error) {
         console.error('Failed to load decks:', error)
       } finally {
@@ -51,6 +61,22 @@ export function Dashboard({ onCreateDeck, refreshTrigger = 0, userId }: Dashboar
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <DashboardHeader onCreateDeck={onCreateDeck} />
+
+      {/* Stats Bar */}
+      {!loading && (
+        <div className="bg-white border-b border-gray-200">
+          <div className="container mx-auto px-4 py-3 flex gap-6">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-500">Total words:</span>
+              <span className="text-sm font-semibold text-gray-900">{totalCards}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-500">Mastered:</span>
+              <span className="text-sm font-semibold text-green-600">{masteredCards}</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Top Ad Banner */}
       <div className="container mx-auto px-4 pt-4">
