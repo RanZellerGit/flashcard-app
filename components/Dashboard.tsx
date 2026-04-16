@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { Deck } from '@/lib/types'
 import { getAllDecks, deleteDeck } from '@/lib/storage'
+import { getCardsViewedToday } from '@/lib/dailyStats'
 import { DeckCard } from './DeckCard'
 import { DashboardHeader } from './DashboardHeader'
 import { AdBanner } from './AdBanner'
@@ -21,6 +22,7 @@ export function Dashboard({ onCreateDeck, refreshTrigger = 0, userId }: Dashboar
   const [loading, setLoading] = useState(true)
   const [totalCards, setTotalCards] = useState(0)
   const [masteredCards, setMasteredCards] = useState(0)
+  const [viewedToday, setViewedToday] = useState(0)
 
   // Load decks on mount and when refresh is triggered
   useEffect(() => {
@@ -37,6 +39,7 @@ export function Dashboard({ onCreateDeck, refreshTrigger = 0, userId }: Dashboar
           setTotalCards(stats.totalCards)
           setMasteredCards(stats.masteredCards)
         }
+        setViewedToday(getCardsViewedToday())
       } catch (error) {
         console.error('Failed to load decks:', error)
       } finally {
@@ -73,6 +76,10 @@ export function Dashboard({ onCreateDeck, refreshTrigger = 0, userId }: Dashboar
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-500">Mastered:</span>
               <span className="text-sm font-semibold text-green-600">{masteredCards}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-500">Viewed today:</span>
+              <span className="text-sm font-semibold text-blue-600">{viewedToday}</span>
             </div>
           </div>
         </div>

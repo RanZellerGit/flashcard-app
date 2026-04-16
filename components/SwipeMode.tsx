@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Flashcard } from '@/lib/types'
 import { getRandomCards, markCardAsKnown } from '@/lib/storage'
+import { incrementCardsViewedToday } from '@/lib/dailyStats'
 import { SwipeCard } from './SwipeCard'
 
 interface SwipeModeProps {
@@ -58,6 +59,7 @@ export function SwipeMode({ userId, onExit }: SwipeModeProps) {
     const remaining = cardsRef.current.slice(1)
     cardsRef.current = remaining
     setCards(remaining)
+    incrementCardsViewedToday()
 
     if (direction === 'right') {
       setKnownCount((prev) => prev + 1)

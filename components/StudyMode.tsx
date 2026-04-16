@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Flashcard } from '@/lib/types'
 import { StudyCard } from './StudyCard'
+import { incrementCardsViewedToday } from '@/lib/dailyStats'
 import { ExitConfirmationModal } from './ExitConfirmationModal'
 
 interface StudyModeProps {
@@ -72,6 +73,7 @@ export function StudyMode({
 
   const goToNext = () => {
     if (cardIndex < cards.length - 1) {
+      incrementCardsViewedToday()
       setCardIndex(cardIndex + 1)
       setIsFlipped(false)
       setIsCompleted(false)
