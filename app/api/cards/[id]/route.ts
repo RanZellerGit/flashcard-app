@@ -15,7 +15,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
 
   const { id } = await params
   const body = await request.json()
-  const { frontText, backText, isKnown, incrementKnown } = body
+  const { frontText, backText, isKnown, incrementKnown, resetKnown } = body
 
   // Verify ownership
   const [existing] = await db
@@ -43,6 +43,10 @@ export async function PATCH(request: Request, { params }: RouteParams) {
   }
 
   const updates: { frontText?: string; backText?: string; isKnown?: boolean; knownCount?: number } = {}
+  if (resetKnown === true) {
+    updates.knownCount = 0
+    updates.isKnown = false
+  }
   if (frontText !== undefined) {
     updates.frontText = sanitizeInput(frontText)
   }

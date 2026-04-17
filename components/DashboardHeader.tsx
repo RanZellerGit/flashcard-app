@@ -28,6 +28,12 @@ export function DashboardHeader({
           >
             Practice
           </Link>
+          <Link
+            href="/mastered"
+            className="px-4 py-2 bg-yellow-500 text-white font-medium rounded-lg hover:bg-yellow-600 transition"
+          >
+            Review Mastered
+          </Link>
           <button
             onClick={onCreateDeck}
             className="px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition"
