@@ -6,7 +6,6 @@ import { getAllDecks, deleteDeck } from '@/lib/storage'
 import { getCardsViewedToday } from '@/lib/dailyStats'
 import { DeckCard } from './DeckCard'
 import { DashboardHeader } from './DashboardHeader'
-import { AdBanner } from './AdBanner'
 
 interface DashboardProps {
   onCreateDeck: () => void
@@ -85,11 +84,6 @@ export function Dashboard({ onCreateDeck, refreshTrigger = 0, userId }: Dashboar
         </div>
       )}
 
-      {/* Top Ad Banner */}
-      <div className="container mx-auto px-4 pt-4">
-        <AdBanner adSlot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_HEADER || ''} className="mb-2" />
-      </div>
-
       {/* Main Content */}
       <div className="container mx-auto px-4 py-8">
         {loading ? (
@@ -139,10 +133,6 @@ export function Dashboard({ onCreateDeck, refreshTrigger = 0, userId }: Dashboar
         )}
       </div>
 
-      {/* Footer Ad Banner */}
-      <div className="container mx-auto px-4 pb-4">
-        <AdBanner adSlot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_FOOTER || ''} className="mt-8" />
-      </div>
     </div>
   )
 }

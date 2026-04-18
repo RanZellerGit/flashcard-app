@@ -18,15 +18,6 @@ export default function RootLayout({
   return (
     <ClerkProvider>
       <html lang="en">
-        <head>
-          {process.env.NEXT_PUBLIC_ADSENSE_PUB_ID && (
-            <script
-              async
-              src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${process.env.NEXT_PUBLIC_ADSENSE_PUB_ID}`}
-              crossOrigin="anonymous"
-            />
-          )}
-        </head>
         <body className={inter.className}>
           <ErrorBoundary>
             {children}
