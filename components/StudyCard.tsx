@@ -89,18 +89,18 @@ export function StudyCard({
         aria-label={`Flashcard, ${isFlipped ? 'showing answer:' : 'showing question:'} ${isFlipped ? card.backText : card.frontText}`}
       >
         <div
-          className="w-full h-64 sm:h-80 bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl shadow-lg transition-transform duration-500 flex items-center justify-center p-6 sm:p-8 border-2 border-blue-200 hover:shadow-xl"
+          className="w-full h-64 sm:h-80 bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl shadow-lg transition-transform duration-500 flex items-center p-6 sm:p-8 border-2 border-blue-200 hover:shadow-xl overflow-hidden"
           style={{
             transform: isFlipped ? 'rotateY(0deg)' : 'rotateY(360deg)',
             transformStyle: 'preserve-3d',
             backfaceVisibility: 'hidden',
           }}
         >
-          <div className="text-center w-full">
-            <p className="text-xs font-semibold text-blue-600 mb-4 uppercase tracking-wide">
+          <div className="flex flex-col w-full min-h-0 overflow-hidden">
+            <p className="text-xs font-semibold text-blue-600 mb-4 uppercase tracking-wide shrink-0 text-center">
               {isFlipped ? 'Answer' : 'Question'}
             </p>
-            <p className="text-2xl sm:text-3xl font-bold text-gray-900 break-words max-h-40 overflow-y-auto">
+            <p className="text-2xl sm:text-3xl font-bold text-gray-900 break-words overflow-y-auto text-center">
               {isFlipped ? card.backText : card.frontText}
             </p>
           </div>
