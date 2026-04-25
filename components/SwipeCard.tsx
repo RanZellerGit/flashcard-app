@@ -152,7 +152,7 @@ export function SwipeCard({ card, onSwipe }: SwipeCardProps) {
         >
           {/* Front */}
           <div
-            className="absolute inset-0 rounded-2xl bg-white flex flex-col items-center justify-center p-8"
+            className="absolute inset-0 rounded-2xl bg-white flex flex-col items-center p-8 overflow-hidden"
             style={{ backfaceVisibility: 'hidden' }}
           >
             <div className="absolute top-4 right-4">
@@ -160,13 +160,15 @@ export function SwipeCard({ card, onSwipe }: SwipeCardProps) {
                 ✓ {card.knownCount}/10
               </span>
             </div>
-            <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-4">
+            <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-4 shrink-0">
               Question
             </p>
-            <p className="text-2xl font-semibold text-gray-900 text-center leading-snug">
-              {card.frontText}
-            </p>
-            <div className="flex items-center gap-3 mt-8">
+            <div className="flex-1 overflow-y-auto w-full flex items-center justify-center py-2">
+              <p className="text-2xl font-semibold text-gray-900 text-center leading-snug">
+                {card.frontText}
+              </p>
+            </div>
+            <div className="flex items-center gap-3 mt-4 shrink-0">
               <p className="text-xs text-gray-400">Tap to reveal answer</p>
               <SpeakButton isSpeaking={isSpeaking} onClick={handleSpeak} />
             </div>
@@ -174,7 +176,7 @@ export function SwipeCard({ card, onSwipe }: SwipeCardProps) {
 
           {/* Back */}
           <div
-            className="absolute inset-0 rounded-2xl bg-blue-50 flex flex-col items-center justify-center p-8"
+            className="absolute inset-0 rounded-2xl bg-blue-50 flex flex-col items-center p-8 overflow-hidden"
             style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
           >
             <div className="absolute top-4 right-4">
@@ -182,13 +184,15 @@ export function SwipeCard({ card, onSwipe }: SwipeCardProps) {
                 ✓ {card.knownCount}/10
               </span>
             </div>
-            <p className="text-xs font-semibold uppercase tracking-widest text-blue-400 mb-4">
+            <p className="text-xs font-semibold uppercase tracking-widest text-blue-400 mb-4 shrink-0">
               Answer
             </p>
-            <p className="text-2xl font-semibold text-gray-900 text-center leading-snug">
-              {card.backText}
-            </p>
-            <div className="mt-8">
+            <div className="flex-1 overflow-y-auto w-full flex items-center justify-center py-2">
+              <p className="text-2xl font-semibold text-gray-900 text-center leading-snug">
+                {card.backText}
+              </p>
+            </div>
+            <div className="mt-4 shrink-0">
               <SpeakButton isSpeaking={isSpeaking} onClick={handleSpeak} />
             </div>
           </div>
