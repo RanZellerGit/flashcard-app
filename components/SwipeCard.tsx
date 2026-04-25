@@ -163,8 +163,8 @@ export function SwipeCard({ card, onSwipe }: SwipeCardProps) {
             <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-4 shrink-0">
               Question
             </p>
-            <div className="flex-1 overflow-y-auto w-full flex items-center justify-center py-2">
-              <p className="text-2xl font-semibold text-gray-900 text-center leading-snug">
+            <div className="flex-1 flex items-center justify-center w-full">
+              <p className="overflow-y-auto max-h-full w-full py-2 text-2xl font-semibold text-gray-900 text-center leading-snug">
                 {card.frontText}
               </p>
             </div>
@@ -187,8 +187,8 @@ export function SwipeCard({ card, onSwipe }: SwipeCardProps) {
             <p className="text-xs font-semibold uppercase tracking-widest text-blue-400 mb-4 shrink-0">
               Answer
             </p>
-            <div className="flex-1 overflow-y-auto w-full flex items-center justify-center py-2">
-              <p className="text-2xl font-semibold text-gray-900 text-center leading-snug">
+            <div className="flex-1 flex items-center justify-center w-full">
+              <p className="overflow-y-auto max-h-full w-full py-2 text-2xl font-semibold text-gray-900 text-center leading-snug">
                 {card.backText}
               </p>
             </div>
