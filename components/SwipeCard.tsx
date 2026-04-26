@@ -164,9 +164,11 @@ export function SwipeCard({ card, onSwipe }: SwipeCardProps) {
               Question
             </p>
             <div className="flex-1 flex items-center justify-center w-full">
-              <p className="overflow-y-auto max-h-full w-full py-2 text-2xl font-semibold text-gray-900 text-center leading-snug">
-                {card.frontText}
-              </p>
+              <div className="overflow-y-auto w-full" style={{ maxHeight: '220px' }}>
+                <p className="text-2xl font-semibold text-gray-900 text-center leading-snug py-2">
+                  {card.frontText}
+                </p>
+              </div>
             </div>
             <div className="flex items-center gap-3 mt-4 shrink-0">
               <p className="text-xs text-gray-400">Tap to reveal answer</p>
@@ -188,9 +190,11 @@ export function SwipeCard({ card, onSwipe }: SwipeCardProps) {
               Answer
             </p>
             <div className="flex-1 flex items-center justify-center w-full">
-              <p className="overflow-y-auto max-h-full w-full py-2 text-2xl font-semibold text-gray-900 text-center leading-snug">
-                {card.backText}
-              </p>
+              <div className="overflow-y-auto w-full" style={{ maxHeight: '220px' }}>
+                <p className="text-2xl font-semibold text-gray-900 text-center leading-snug py-2">
+                  {card.backText}
+                </p>
+              </div>
             </div>
             <div className="mt-4 shrink-0">
               <SpeakButton isSpeaking={isSpeaking} onClick={handleSpeak} />
