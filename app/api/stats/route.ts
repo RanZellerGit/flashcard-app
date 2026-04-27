@@ -17,12 +17,14 @@ export async function GET() {
   const [totalResult, masteredResult, viewedTodayResult] = await Promise.all([
     db.select({ total: count() }).from(flashcards).where(eq(flashcards.userId, userId)),
     db.select({ mastered: count() }).from(flashcards).where(and(eq(flashcards.userId, userId), gte(flashcards.knownCount, 10))),
-    db.select({ count: dailyViews.count }).from(dailyViews).where(and(eq(dailyViews.userId, userId), eq(dailyViews.date, todayString()))),
+    db.select({ viewedCount: dailyViews.count }).from(dailyViews).where(and(eq(dailyViews.userId, userId), eq(dailyViews.date, todayString()))),
   ])
 
-  return NextResponse.json({
+  const response = NextResponse.json({
     totalCards: totalResult[0]?.total ?? 0,
     masteredCards: masteredResult[0]?.mastered ?? 0,
-    viewedToday: viewedTodayResult[0]?.count ?? 0,
+    viewedToday: viewedTodayResult[0]?.viewedCount ?? 0,
   })
+  response.headers.set('Cache-Control', 'no-store')
+  return response
 }

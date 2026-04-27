@@ -29,7 +29,7 @@ export function Dashboard({ onCreateDeck, refreshTrigger = 0, userId }: Dashboar
         setLoading(true)
         const [deckList, statsRes] = await Promise.all([
           getAllDecks(userId),
-          fetch('/api/stats'),
+          fetch('/api/stats', { cache: 'no-store' }),
         ])
         setDecks(deckList)
         if (statsRes.ok) {
