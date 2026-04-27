@@ -1,4 +1,4 @@
-import { pgTable, varchar, integer, timestamp, boolean, index } from 'drizzle-orm/pg-core'
+import { pgTable, varchar, integer, timestamp, boolean, index, primaryKey } from 'drizzle-orm/pg-core'
 
 export const decks = pgTable(
   'decks',
@@ -34,6 +34,18 @@ export const flashcards = pgTable(
   (table) => [
     index('idx_flashcards_deck_id').on(table.deckId),
     index('idx_flashcards_user_id').on(table.userId),
+  ]
+)
+
+export const dailyViews = pgTable(
+  'daily_views',
+  {
+    userId: varchar('user_id', { length: 255 }).notNull(),
+    date: varchar('date', { length: 10 }).notNull(), // 'YYYY-MM-DD'
+    count: integer('count').notNull().default(0),
+  },
+  (table) => [
+    primaryKey({ columns: [table.userId, table.date] }),
   ]
 )
 

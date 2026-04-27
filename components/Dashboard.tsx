@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react'
 import { Deck } from '@/lib/types'
 import { getAllDecks, deleteDeck } from '@/lib/storage'
-import { getCardsViewedToday } from '@/lib/dailyStats'
 import { DeckCard } from './DeckCard'
 import { DashboardHeader } from './DashboardHeader'
 
@@ -37,8 +36,8 @@ export function Dashboard({ onCreateDeck, refreshTrigger = 0, userId }: Dashboar
           const stats = await statsRes.json()
           setTotalCards(stats.totalCards)
           setMasteredCards(stats.masteredCards)
+          setViewedToday(stats.viewedToday ?? 0)
         }
-        setViewedToday(getCardsViewedToday())
       } catch (error) {
         console.error('Failed to load decks:', error)
       } finally {
