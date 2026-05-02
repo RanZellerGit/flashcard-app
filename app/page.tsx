@@ -1,66 +1,41 @@
-'use client'
+import { auth } from '@clerk/nextjs/server'
+import { redirect } from 'next/navigation'
+import { db } from '@/lib/db'
+import { decks, flashcards, dailyViews } from '@/lib/db/schema'
+import { eq, desc, and, gte, count } from 'drizzle-orm'
+import { HomeClient } from './HomeClient'
 
-import { useState } from 'react'
-import { useUser } from '@clerk/nextjs'
-import { Dashboard } from '@/components/Dashboard'
-import { DeckForm } from '@/components/DeckForm'
-import { createDeck } from '@/lib/storage'
+function todayString() {
+  return new Date().toISOString().slice(0, 10)
+}
 
-/**
- * T031: Dashboard page - home screen showing all decks
- */
-export default function Home() {
-  const { user } = useUser()
-  const [showCreateForm, setShowCreateForm] = useState(false)
-  const [refreshTrigger, setRefreshTrigger] = useState(0)
-
-  const handleCreateDeck = async (name: string) => {
-    if (!user?.id) {
-      console.error('User not authenticated')
-      return
-    }
-
-    try {
-      await createDeck(name, user.id)
-      setShowCreateForm(false)
-      // Trigger refresh of deck list
-      setRefreshTrigger((prev) => prev + 1)
-    } catch (error) {
-      console.error('Failed to create deck:', error)
-      throw error
-    }
+export default async function Home() {
+  const { userId } = await auth()
+  if (!userId) {
+    redirect('/sign-in')
   }
 
-  if (!user?.id) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p>Loading...</p>
-      </div>
-    )
+  const [deckRows, totalResult, masteredResult, viewedResult] = await Promise.all([
+    db.select().from(decks).where(eq(decks.userId, userId)).orderBy(desc(decks.createdDate)),
+    db.select({ total: count() }).from(flashcards).where(eq(flashcards.userId, userId)),
+    db.select({ mastered: count() }).from(flashcards).where(and(eq(flashcards.userId, userId), gte(flashcards.knownCount, 10))),
+    db.select({ viewedCount: dailyViews.count }).from(dailyViews).where(and(eq(dailyViews.userId, userId), eq(dailyViews.date, todayString()))),
+  ])
+
+  const initialDecks = deckRows.map((row) => ({
+    id: row.id,
+    name: row.name,
+    createdDate: row.createdDate.toISOString(),
+    updatedDate: row.updatedDate.toISOString(),
+    cardCount: row.cardCount,
+    userId: row.userId,
+  }))
+
+  const initialStats = {
+    totalCards: totalResult[0]?.total ?? 0,
+    masteredCards: masteredResult[0]?.mastered ?? 0,
+    viewedToday: viewedResult[0]?.viewedCount ?? 0,
   }
 
-  return (
-    <>
-      <Dashboard
-        onCreateDeck={() => setShowCreateForm(true)}
-        refreshTrigger={refreshTrigger}
-        userId={user.id}
-      />
-
-      {/* Create Deck Form Modal */}
-      {showCreateForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg shadow-lg p-6 max-w-md w-full">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">
-              Create New Deck
-            </h2>
-            <DeckForm
-              onSubmit={handleCreateDeck}
-              onCancel={() => setShowCreateForm(false)}
-            />
-          </div>
-        </div>
-      )}
-    </>
-  )
+  return <HomeClient userId={userId} initialDecks={initialDecks} initialStats={initialStats} />
 }

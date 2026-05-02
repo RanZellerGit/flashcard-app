@@ -1,29 +1,50 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Deck } from '@/lib/types'
 import { getAllDecks, deleteDeck } from '@/lib/storage'
 import { DeckCard } from './DeckCard'
 import { DashboardHeader } from './DashboardHeader'
 
+interface Stats {
+  totalCards: number
+  masteredCards: number
+  viewedToday: number
+}
+
 interface DashboardProps {
   onCreateDeck: () => void
   refreshTrigger?: number
   userId: string
+  initialDecks?: Deck[]
+  initialStats?: Stats
 }
 
 /**
  * T030: Dashboard component for displaying all decks
  */
-export function Dashboard({ onCreateDeck, refreshTrigger = 0, userId }: DashboardProps) {
-  const [decks, setDecks] = useState<Deck[]>([])
-  const [loading, setLoading] = useState(true)
-  const [totalCards, setTotalCards] = useState(0)
-  const [masteredCards, setMasteredCards] = useState(0)
-  const [viewedToday, setViewedToday] = useState(0)
+export function Dashboard({
+  onCreateDeck,
+  refreshTrigger = 0,
+  userId,
+  initialDecks = [],
+  initialStats,
+}: DashboardProps) {
+  const hasSSRData = initialStats !== undefined
+  const [decks, setDecks] = useState<Deck[]>(initialDecks)
+  const [loading, setLoading] = useState(!hasSSRData)
+  const [totalCards, setTotalCards] = useState(initialStats?.totalCards ?? 0)
+  const [masteredCards, setMasteredCards] = useState(initialStats?.masteredCards ?? 0)
+  const [viewedToday, setViewedToday] = useState(initialStats?.viewedToday ?? 0)
+  const isFirstRender = useRef(true)
 
-  // Load decks on mount and when refresh is triggered
   useEffect(() => {
+    // Skip the initial fetch when SSR data was provided
+    if (isFirstRender.current) {
+      isFirstRender.current = false
+      if (hasSSRData) return
+    }
+
     const loadDecks = async () => {
       try {
         setLoading(true)
