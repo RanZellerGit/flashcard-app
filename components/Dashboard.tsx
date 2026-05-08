@@ -5,6 +5,7 @@ import { Deck } from '@/lib/types'
 import { getAllDecks, deleteDeck } from '@/lib/storage'
 import { DeckCard } from './DeckCard'
 import { DashboardHeader } from './DashboardHeader'
+import { SearchBar } from './SearchBar'
 
 interface Stats {
   totalCards: number
@@ -104,8 +105,13 @@ export function Dashboard({
         </div>
       )}
 
+      {/* Search */}
+      <div className="container mx-auto px-4 py-4">
+        <SearchBar />
+      </div>
+
       {/* Main Content */}
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-4">
         {loading ? (
           <div className="flex justify-center items-center py-12">
             <p className="text-gray-500">Loading your decks...</p>
