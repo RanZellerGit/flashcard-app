@@ -8,8 +8,10 @@ import { UserButton } from '@clerk/nextjs'
  */
 export function DashboardHeader({
   onCreateDeck,
+  onListenAll,
 }: {
   onCreateDeck: () => void
+  onListenAll: () => void
 }) {
   return (
     <div className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-10">
@@ -22,6 +24,12 @@ export function DashboardHeader({
         </div>
 
         <div className="flex items-center gap-4">
+          <button
+            onClick={onListenAll}
+            className="px-4 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition"
+          >
+            ▶ Listen All
+          </button>
           <Link
             href="/swipe"
             className="px-4 py-2 bg-purple-600 text-white font-medium rounded-lg hover:bg-purple-700 transition"

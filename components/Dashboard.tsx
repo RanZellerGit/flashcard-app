@@ -6,6 +6,7 @@ import { getAllDecks, deleteDeck } from '@/lib/storage'
 import { DeckCard } from './DeckCard'
 import { DashboardHeader } from './DashboardHeader'
 import { SearchBar } from './SearchBar'
+import { AutoPlayPlayer } from './AutoPlayPlayer'
 
 interface Stats {
   totalCards: number
@@ -32,6 +33,7 @@ export function Dashboard({
   initialStats,
 }: DashboardProps) {
   const hasSSRData = initialStats !== undefined
+  const [showPlayer, setShowPlayer] = useState(false)
   const [decks, setDecks] = useState<Deck[]>(initialDecks)
   const [loading, setLoading] = useState(!hasSSRData)
   const [totalCards, setTotalCards] = useState(initialStats?.totalCards ?? 0)
@@ -83,7 +85,7 @@ export function Dashboard({
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <DashboardHeader onCreateDeck={onCreateDeck} />
+      <DashboardHeader onCreateDeck={onCreateDeck} onListenAll={() => setShowPlayer(true)} />
 
       {/* Stats Bar */}
       {!loading && (
@@ -159,6 +161,7 @@ export function Dashboard({
         )}
       </div>
 
+      {showPlayer && <AutoPlayPlayer onClose={() => setShowPlayer(false)} />}
     </div>
   )
 }
