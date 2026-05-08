@@ -15,40 +15,41 @@ export function DashboardHeader({
 }) {
   return (
     <div className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-10">
-      <div className="container mx-auto px-4 py-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Flashcard App</h1>
-          <p className="text-sm text-gray-600 mt-1">
-            Learn at your own pace
-          </p>
+      <div className="container mx-auto px-4 py-3 sm:py-5">
+        {/* Top row: title + user avatar */}
+        <div className="flex items-center justify-between">
+          <h1 className="text-xl sm:text-3xl font-bold text-gray-900">Flashcard App</h1>
+          <UserButton />
         </div>
 
-        <div className="flex items-center gap-4">
+        {/* Bottom row: action buttons */}
+        <div className="flex flex-wrap items-center gap-2 mt-2">
           <button
             onClick={onListenAll}
-            className="px-4 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition"
+            className="px-3 py-1.5 sm:px-4 sm:py-2 bg-green-600 text-white text-xs sm:text-sm font-medium rounded-lg hover:bg-green-700 transition"
           >
             ▶ Listen All
           </button>
           <Link
             href="/swipe"
-            className="px-4 py-2 bg-purple-600 text-white font-medium rounded-lg hover:bg-purple-700 transition"
+            className="px-3 py-1.5 sm:px-4 sm:py-2 bg-purple-600 text-white text-xs sm:text-sm font-medium rounded-lg hover:bg-purple-700 transition"
           >
             Practice
           </Link>
           <Link
             href="/mastered"
-            className="px-4 py-2 bg-yellow-500 text-white font-medium rounded-lg hover:bg-yellow-600 transition"
+            className="px-3 py-1.5 sm:px-4 sm:py-2 bg-yellow-500 text-white text-xs sm:text-sm font-medium rounded-lg hover:bg-yellow-600 transition"
           >
-            Review Mastered
+            <span className="sm:hidden">Mastered</span>
+            <span className="hidden sm:inline">Review Mastered</span>
           </Link>
           <button
             onClick={onCreateDeck}
-            className="px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition"
+            className="px-3 py-1.5 sm:px-4 sm:py-2 bg-blue-600 text-white text-xs sm:text-sm font-medium rounded-lg hover:bg-blue-700 transition"
           >
-            + Create New Deck
+            <span className="sm:hidden">+ Deck</span>
+            <span className="hidden sm:inline">+ Create New Deck</span>
           </button>
-          <UserButton />
         </div>
       </div>
     </div>

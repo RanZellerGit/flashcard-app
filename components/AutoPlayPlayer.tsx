@@ -222,7 +222,7 @@ export function AutoPlayPlayer({ onClose }: AutoPlayPlayerProps) {
         />
       </div>
 
-      <div className="container mx-auto px-4 py-3">
+      <div className="container mx-auto px-4 py-3 max-h-[60vh] overflow-y-auto">
         {loading ? (
           <p className="text-sm text-gray-500 text-center">Loading cards...</p>
         ) : cards.length === 0 ? (
@@ -247,8 +247,8 @@ export function AutoPlayPlayer({ onClose }: AutoPlayPlayerProps) {
 
             {/* Karaoke text display */}
             {current && (
-              <div className="bg-gray-50 rounded-lg px-4 py-3 mb-3 space-y-2">
-                <div className="text-base font-semibold leading-relaxed">
+              <div className="bg-gray-50 rounded-lg px-4 py-3 mb-3 space-y-2 max-h-36 overflow-y-auto">
+                <div className="text-sm sm:text-base font-semibold leading-relaxed">
                   <HighlightedText
                     text={current.frontText}
                     range={phase === 'front' ? wordRange : null}
@@ -256,7 +256,7 @@ export function AutoPlayPlayer({ onClose }: AutoPlayPlayerProps) {
                     large
                   />
                 </div>
-                <div className="text-base leading-relaxed border-t border-gray-200 pt-2">
+                <div className="text-sm sm:text-base leading-relaxed border-t border-gray-200 pt-2">
                   <HighlightedText
                     text={current.backText}
                     range={phase === 'back' ? wordRange : null}
@@ -268,7 +268,7 @@ export function AutoPlayPlayer({ onClose }: AutoPlayPlayerProps) {
             )}
 
             {/* Controls */}
-            <div className="flex items-center justify-center gap-3">
+            <div className="flex items-center justify-center gap-2 sm:gap-3">
               <ControlButton onClick={handleSkipPrev} disabled={currentIndex === 0 || loading} title="Previous">
                 <PrevIcon />
               </ControlButton>
@@ -322,8 +322,8 @@ function ControlButton({
       title={title}
       className={`p-2 rounded-full transition disabled:opacity-30 disabled:cursor-not-allowed ${
         primary
-          ? 'bg-blue-600 text-white hover:bg-blue-700 w-10 h-10 flex items-center justify-center'
-          : 'text-gray-600 hover:bg-gray-100'
+          ? 'bg-blue-600 text-white hover:bg-blue-700 w-12 h-12 sm:w-10 sm:h-10 flex items-center justify-center'
+          : 'text-gray-600 hover:bg-gray-100 p-2 min-w-[40px] min-h-[40px]'
       }`}
     >
       {children}
