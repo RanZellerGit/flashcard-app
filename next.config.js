@@ -7,11 +7,14 @@ const nextConfig = {
   async headers() {
     return [
       {
+        // HTML pages: never cache — auth redirects must always be re-evaluated.
+        // Caching 302s on mobile (especially Safari) causes a redirect loop
+        // where the browser replays the cached /sign-in redirect after login.
         source: '/:path*',
         headers: [
           {
             key: 'Cache-Control',
-            value: 'public, max-age=3600, must-revalidate',
+            value: 'no-store',
           },
           {
             key: 'X-Content-Type-Options',
@@ -27,7 +30,16 @@ const nextConfig = {
           },
         ],
       },
-      // Cache static assets longer
+      // Static JS/CSS/images: cache aggressively (Next.js content-hashes these)
+      {
+        source: '/_next/static/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
       {
         source: '/public/:path*',
         headers: [
