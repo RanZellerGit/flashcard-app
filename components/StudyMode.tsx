@@ -27,11 +27,22 @@ export function StudyMode({
   const [isCompleted, setIsCompleted] = useState(false)
   const [showExitConfirm, setShowExitConfirm] = useState(false)
   const cardsLengthRef = useRef(cards.length)
+  const viewedIndicesRef = useRef<Set<number>>(new Set())
 
   // Update ref when cards change
   useEffect(() => {
     cardsLengthRef.current = cards.length
   }, [cards.length])
+
+  // Count each card the first time it's displayed this session, no matter
+  // how the user navigated to it (buttons, keyboard, first/last card).
+  useEffect(() => {
+    if (isCompleted || cards.length === 0) return
+    if (!viewedIndicesRef.current.has(cardIndex)) {
+      viewedIndicesRef.current.add(cardIndex)
+      incrementCardsViewedToday()
+    }
+  }, [cardIndex, isCompleted, cards.length])
 
   // Handle keyboard shortcuts
   useEffect(() => {
@@ -73,7 +84,6 @@ export function StudyMode({
 
   const goToNext = () => {
     if (cardIndex < cards.length - 1) {
-      incrementCardsViewedToday()
       setCardIndex(cardIndex + 1)
       setIsFlipped(false)
       setIsCompleted(false)
