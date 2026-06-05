@@ -7,6 +7,7 @@ import { DeckCard } from './DeckCard'
 import { DashboardHeader } from './DashboardHeader'
 import { SearchBar } from './SearchBar'
 import { AutoPlayPlayer } from './AutoPlayPlayer'
+import { DailyViewsChart } from './DailyViewsChart'
 
 interface Stats {
   totalCards: number
@@ -104,6 +105,13 @@ export function Dashboard({
               <span className="text-sm font-semibold text-blue-600">{viewedToday}</span>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Daily activity chart */}
+      {!loading && (
+        <div className="container mx-auto px-4 pt-4">
+          <DailyViewsChart refreshTrigger={refreshTrigger} />
         </div>
       )}
 
