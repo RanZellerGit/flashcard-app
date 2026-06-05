@@ -75,6 +75,26 @@ export function AutoPlayPlayer({ onClose, limit, unmasteredOnly }: AutoPlayPlaye
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const indexRef = useRef(0)
   const viewedIdsRef = useRef<Set<string>>(new Set())
+  // WakeLockSentinel — keeps the screen awake so playback isn't interrupted by auto-lock.
+  const wakeLockRef = useRef<{ release: () => Promise<void> } | null>(null)
+
+  const requestWakeLock = useCallback(async () => {
+    try {
+      const nav = navigator as Navigator & {
+        wakeLock?: { request: (type: 'screen') => Promise<{ release: () => Promise<void> }> }
+      }
+      if (nav.wakeLock) {
+        wakeLockRef.current = await nav.wakeLock.request('screen')
+      }
+    } catch {
+      // Wake lock may be denied (e.g. low battery) — non-critical.
+    }
+  }, [])
+
+  const releaseWakeLock = useCallback(() => {
+    wakeLockRef.current?.release().catch(() => {})
+    wakeLockRef.current = null
+  }, [])
 
   useEffect(() => {
     fetch(`/api/cards/all${unmasteredOnly ? '?unmastered=1' : ''}`)
@@ -110,6 +130,8 @@ export function AutoPlayPlayer({ onClose, limit, unmasteredOnly }: AutoPlayPlaye
         setIsPaused(false)
         setPhase('idle')
         setWordRange(null)
+        releaseWakeLock()
+        if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'none'
         return
       }
 
@@ -125,6 +147,16 @@ export function AutoPlayPlayer({ onClose, limit, unmasteredOnly }: AutoPlayPlaye
       if (!viewedIdsRef.current.has(card.cardId)) {
         viewedIdsRef.current.add(card.cardId)
         incrementCardsViewedToday()
+      }
+
+      // Best-effort lock-screen / notification metadata (where supported).
+      if ('mediaSession' in navigator) {
+        navigator.mediaSession.metadata = new MediaMetadata({
+          title: card.frontText,
+          artist: card.backText,
+          album: card.deckName,
+        })
+        navigator.mediaSession.playbackState = 'playing'
       }
 
       const speakFront = new SpeechSynthesisUtterance(card.frontText)
@@ -165,11 +197,12 @@ export function AutoPlayPlayer({ onClose, limit, unmasteredOnly }: AutoPlayPlaye
 
       window.speechSynthesis.speak(speakFront)
     },
-    [cards]
+    [cards, releaseWakeLock]
   )
 
   const handlePlay = () => {
     cancelRef.current = false
+    requestWakeLock()
     playFrom(currentIndex)
   }
 
@@ -179,6 +212,8 @@ export function AutoPlayPlayer({ onClose, limit, unmasteredOnly }: AutoPlayPlaye
     setIsPlaying(false)
     setIsPaused(true)
     setPhase('idle')
+    releaseWakeLock()
+    if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused'
   }
 
   const handleStop = () => {
@@ -189,6 +224,8 @@ export function AutoPlayPlayer({ onClose, limit, unmasteredOnly }: AutoPlayPlaye
     setPhase('idle')
     setCurrentIndex(0)
     indexRef.current = 0
+    releaseWakeLock()
+    if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'none'
   }
 
   const handleSkipNext = () => {
@@ -210,6 +247,7 @@ export function AutoPlayPlayer({ onClose, limit, unmasteredOnly }: AutoPlayPlaye
   const handleClose = () => {
     cancelRef.current = true
     stopSpeech()
+    releaseWakeLock()
     onClose()
   }
 
@@ -218,8 +256,39 @@ export function AutoPlayPlayer({ onClose, limit, unmasteredOnly }: AutoPlayPlaye
       cancelRef.current = true
       clearTimer()
       window.speechSynthesis.cancel()
+      releaseWakeLock()
     }
-  }, [])
+  }, [releaseWakeLock])
+
+  // Wake locks are auto-released when the tab is hidden; re-acquire on return
+  // if we're still playing so playback keeps the screen awake.
+  useEffect(() => {
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible' && isPlaying) {
+        requestWakeLock()
+      }
+    }
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => document.removeEventListener('visibilitychange', onVisibility)
+  }, [isPlaying, requestWakeLock])
+
+  // Best-effort lock-screen / notification media controls (where the browser
+  // surfaces them). Most mobile browsers only show these for real <audio>, so
+  // these handlers may be a no-op for speech synthesis.
+  useEffect(() => {
+    if (!('mediaSession' in navigator)) return
+    const ms = navigator.mediaSession
+    ms.setActionHandler('play', () => handlePlay())
+    ms.setActionHandler('pause', () => handlePause())
+    ms.setActionHandler('nexttrack', () => handleSkipNext())
+    ms.setActionHandler('previoustrack', () => handleSkipPrev())
+    return () => {
+      ms.setActionHandler('play', null)
+      ms.setActionHandler('pause', null)
+      ms.setActionHandler('nexttrack', null)
+      ms.setActionHandler('previoustrack', null)
+    }
+  })
 
   const current = cards[currentIndex]
   const progress = cards.length > 0 ? ((currentIndex + 1) / cards.length) * 100 : 0
