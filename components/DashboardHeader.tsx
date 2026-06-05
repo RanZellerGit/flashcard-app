@@ -9,9 +9,11 @@ import { UserButton } from '@clerk/nextjs'
 export function DashboardHeader({
   onCreateDeck,
   onListenAll,
+  onPracticeListen,
 }: {
   onCreateDeck: () => void
   onListenAll: () => void
+  onPracticeListen: () => void
 }) {
   return (
     <div className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-10">
@@ -29,6 +31,13 @@ export function DashboardHeader({
             className="px-3 py-1.5 sm:px-4 sm:py-2 bg-green-600 text-white text-xs sm:text-sm font-medium rounded-lg hover:bg-green-700 transition"
           >
             ▶ Listen All
+          </button>
+          <button
+            onClick={onPracticeListen}
+            className="px-3 py-1.5 sm:px-4 sm:py-2 bg-teal-600 text-white text-xs sm:text-sm font-medium rounded-lg hover:bg-teal-700 transition"
+          >
+            <span className="sm:hidden">▶ Listen 10</span>
+            <span className="hidden sm:inline">▶ Practice Listen (10)</span>
           </button>
           <Link
             href="/swipe"

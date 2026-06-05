@@ -35,6 +35,7 @@ export function Dashboard({
 }: DashboardProps) {
   const hasSSRData = initialStats !== undefined
   const [showPlayer, setShowPlayer] = useState(false)
+  const [playerLimit, setPlayerLimit] = useState<number | undefined>(undefined)
   const [decks, setDecks] = useState<Deck[]>(initialDecks)
   const [loading, setLoading] = useState(!hasSSRData)
   const [totalCards, setTotalCards] = useState(initialStats?.totalCards ?? 0)
@@ -86,7 +87,17 @@ export function Dashboard({
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <DashboardHeader onCreateDeck={onCreateDeck} onListenAll={() => setShowPlayer(true)} />
+      <DashboardHeader
+        onCreateDeck={onCreateDeck}
+        onListenAll={() => {
+          setPlayerLimit(undefined)
+          setShowPlayer(true)
+        }}
+        onPracticeListen={() => {
+          setPlayerLimit(10)
+          setShowPlayer(true)
+        }}
+      />
 
       {/* Stats Bar */}
       {!loading && (
@@ -169,7 +180,14 @@ export function Dashboard({
         )}
       </div>
 
-      {showPlayer && <AutoPlayPlayer onClose={() => setShowPlayer(false)} />}
+      {showPlayer && (
+        <AutoPlayPlayer
+          key={playerLimit ?? 'all'}
+          limit={playerLimit}
+          unmasteredOnly={playerLimit !== undefined}
+          onClose={() => setShowPlayer(false)}
+        />
+      )}
     </div>
   )
 }

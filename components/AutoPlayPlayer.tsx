@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { incrementCardsViewedToday } from '@/lib/dailyStats'
 
 interface CardEntry {
   cardId: string
@@ -17,6 +18,10 @@ interface WordRange {
 
 interface AutoPlayPlayerProps {
   onClose: () => void
+  /** If set, plays a random subset of this many cards (e.g. 10 for Practice Listen). */
+  limit?: number
+  /** If true, only includes cards not yet mastered (known < 10 times). */
+  unmasteredOnly?: boolean
 }
 
 function wordLengthAt(text: string, start: number): number {
@@ -57,7 +62,7 @@ function HighlightedText({
   )
 }
 
-export function AutoPlayPlayer({ onClose }: AutoPlayPlayerProps) {
+export function AutoPlayPlayer({ onClose, limit, unmasteredOnly }: AutoPlayPlayerProps) {
   const [cards, setCards] = useState<CardEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [currentIndex, setCurrentIndex] = useState(0)
@@ -69,20 +74,21 @@ export function AutoPlayPlayer({ onClose }: AutoPlayPlayerProps) {
   const cancelRef = useRef(false)
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const indexRef = useRef(0)
+  const viewedIdsRef = useRef<Set<string>>(new Set())
 
   useEffect(() => {
-    fetch('/api/cards/all')
+    fetch(`/api/cards/all${unmasteredOnly ? '?unmastered=1' : ''}`)
       .then((r) => r.json())
       .then((data: CardEntry[]) => {
         for (let i = data.length - 1; i > 0; i--) {
           const j = Math.floor(Math.random() * (i + 1))
           ;[data[i], data[j]] = [data[j], data[i]]
         }
-        setCards(data)
+        setCards(limit ? data.slice(0, limit) : data)
         setLoading(false)
       })
       .catch(() => setLoading(false))
-  }, [])
+  }, [limit, unmasteredOnly])
 
   const clearTimer = () => {
     if (timeoutRef.current) {
@@ -114,6 +120,12 @@ export function AutoPlayPlayer({ onClose }: AutoPlayPlayerProps) {
       setWordRange(null)
 
       const card = cards[index]
+
+      // Count each card toward the daily viewed total the first time it plays.
+      if (!viewedIdsRef.current.has(card.cardId)) {
+        viewedIdsRef.current.add(card.cardId)
+        incrementCardsViewedToday()
+      }
 
       const speakFront = new SpeechSynthesisUtterance(card.frontText)
       speakFront.rate = 0.9
