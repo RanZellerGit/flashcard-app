@@ -11,6 +11,41 @@ interface MasteredModeProps {
   onExit: () => void
 }
 
+const SESSION_STORAGE_KEY = 'masteredReviewSession'
+
+interface MasteredReviewSession {
+  remainingIds: string[]
+  forgotCount: number
+}
+
+function loadSession(): MasteredReviewSession | null {
+  try {
+    const raw = localStorage.getItem(SESSION_STORAGE_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw) as MasteredReviewSession
+    if (!Array.isArray(parsed.remainingIds)) return null
+    return parsed
+  } catch {
+    return null
+  }
+}
+
+function saveSession(session: MasteredReviewSession) {
+  try {
+    localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session))
+  } catch {
+    // Ignore quota / serialization errors — session resume is best-effort.
+  }
+}
+
+function clearSession() {
+  try {
+    localStorage.removeItem(SESSION_STORAGE_KEY)
+  } catch {
+    // ignore
+  }
+}
+
 export function MasteredMode({ userId, onExit }: MasteredModeProps) {
   const [cards, setCards] = useState<Flashcard[]>([])
   const [loading, setLoading] = useState(true)
@@ -19,13 +54,34 @@ export function MasteredMode({ userId, onExit }: MasteredModeProps) {
   const [error, setError] = useState<string | null>(null)
 
   const cardsRef = useRef<Flashcard[]>([])
+  const forgotCountRef = useRef(0)
 
   useEffect(() => {
     const load = async () => {
       try {
         const fetched = await getMasteredCards()
-        setCards(fetched)
-        cardsRef.current = fetched
+        const byId = new Map(fetched.map((c) => [c.id, c]))
+
+        const saved = loadSession()
+        // Resume only if the saved queue still has cards that are currently mastered.
+        const resumeIds = saved?.remainingIds.filter((id) => byId.has(id)) ?? []
+
+        let queue: Flashcard[]
+        if (saved && resumeIds.length > 0) {
+          queue = resumeIds.map((id) => byId.get(id)!)
+          const restoredForgot = saved.forgotCount ?? 0
+          setForgotCount(restoredForgot)
+          forgotCountRef.current = restoredForgot
+        } else {
+          queue = fetched
+          clearSession()
+          if (queue.length > 0) {
+            saveSession({ remainingIds: queue.map((c) => c.id), forgotCount: 0 })
+          }
+        }
+
+        setCards(queue)
+        cardsRef.current = queue
       } catch {
         setError('Failed to load mastered cards. Please try again.')
       } finally {
@@ -61,7 +117,8 @@ export function MasteredMode({ userId, onExit }: MasteredModeProps) {
     incrementCardsViewedToday()
 
     if (direction === 'left') {
-      setForgotCount((prev) => prev + 1)
+      forgotCountRef.current += 1
+      setForgotCount(forgotCountRef.current)
       try {
         await resetCardToUnknown(current.id)
       } catch {
@@ -71,7 +128,13 @@ export function MasteredMode({ userId, onExit }: MasteredModeProps) {
     // right = still know → do nothing
 
     if (remaining.length === 0) {
+      clearSession()
       setIsCompleted(true)
+    } else {
+      saveSession({
+        remainingIds: remaining.map((c) => c.id),
+        forgotCount: forgotCountRef.current,
+      })
     }
   }
 
