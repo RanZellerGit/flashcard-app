@@ -59,3 +59,10 @@ export function parseDate(isoString: string): Date {
 export function isValidId(id: unknown): id is string {
   return typeof id === 'string' && id.length > 0
 }
+
+// Convert the literal two-character sequence "\n" (and "\r\n") into real
+// newlines so card text typed/imported with escaped breaks renders as
+// multi-line.
+export function normalizeCardText(text: string): string {
+  return text.replace(/\\r\\n|\\n/g, '\n')
+}

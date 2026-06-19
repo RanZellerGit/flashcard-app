@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Flashcard } from '@/lib/types'
+import { normalizeCardText } from '@/lib/utils'
 
 interface StudyCardProps {
   card: Flashcard
@@ -48,7 +49,7 @@ export function StudyCard({
       setIsSpeaking(false)
       return
     }
-    const text = isFlipped ? card.backText : card.frontText
+    const text = normalizeCardText(isFlipped ? card.backText : card.frontText)
     const utterance = new SpeechSynthesisUtterance(text)
     utterance.onend = () => setIsSpeaking(false)
     utterance.onerror = () => setIsSpeaking(false)
@@ -86,7 +87,7 @@ export function StudyCard({
         style={{
           perspective: '1000px',
         }}
-        aria-label={`Flashcard, ${isFlipped ? 'showing answer:' : 'showing question:'} ${isFlipped ? card.backText : card.frontText}`}
+        aria-label={`Flashcard, ${isFlipped ? 'showing answer:' : 'showing question:'} ${normalizeCardText(isFlipped ? card.backText : card.frontText)}`}
       >
         <div
           className="w-full h-64 sm:h-80 bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl shadow-lg transition-transform duration-500 flex items-center p-6 sm:p-8 border-2 border-blue-200 hover:shadow-xl overflow-hidden"
@@ -100,8 +101,8 @@ export function StudyCard({
             <p className="text-xs font-semibold text-blue-600 mb-4 uppercase tracking-wide shrink-0 text-center">
               {isFlipped ? 'Answer' : 'Question'}
             </p>
-            <p className="text-2xl sm:text-3xl font-bold text-gray-900 break-words overflow-y-auto text-center">
-              {isFlipped ? card.backText : card.frontText}
+            <p className="text-2xl sm:text-3xl font-bold text-gray-900 break-words overflow-y-auto text-center whitespace-pre-line">
+              {normalizeCardText(isFlipped ? card.backText : card.frontText)}
             </p>
           </div>
         </div>

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { incrementCardsViewedToday } from '@/lib/dailyStats'
+import { normalizeCardText } from '@/lib/utils'
 
 interface CardEntry {
   cardId: string
@@ -40,7 +41,7 @@ function HighlightedText({
   dim?: boolean
   large?: boolean
 }) {
-  const base = dim ? 'text-gray-400' : 'text-gray-800'
+  const base = `${dim ? 'text-gray-400' : 'text-gray-800'} whitespace-pre-line`
   if (!range) {
     return <span className={base}>{text}</span>
   }
@@ -149,23 +150,26 @@ export function AutoPlayPlayer({ onClose, limit, unmasteredOnly }: AutoPlayPlaye
         incrementCardsViewedToday()
       }
 
+      const frontText = normalizeCardText(card.frontText)
+      const backText = normalizeCardText(card.backText)
+
       // Best-effort lock-screen / notification metadata (where supported).
       if ('mediaSession' in navigator) {
         navigator.mediaSession.metadata = new MediaMetadata({
-          title: card.frontText,
-          artist: card.backText,
+          title: frontText,
+          artist: backText,
           album: card.deckName,
         })
         navigator.mediaSession.playbackState = 'playing'
       }
 
-      const speakFront = new SpeechSynthesisUtterance(card.frontText)
+      const speakFront = new SpeechSynthesisUtterance(frontText)
       speakFront.rate = 0.9
       setPhase('front')
 
       speakFront.onboundary = (e) => {
         if (e.name !== 'word') return
-        setWordRange({ start: e.charIndex, length: e.charLength ?? wordLengthAt(card.frontText, e.charIndex) })
+        setWordRange({ start: e.charIndex, length: e.charLength ?? wordLengthAt(frontText, e.charIndex) })
       }
 
       speakFront.onend = () => {
@@ -173,13 +177,13 @@ export function AutoPlayPlayer({ onClose, limit, unmasteredOnly }: AutoPlayPlaye
         if (cancelRef.current) return
         timeoutRef.current = setTimeout(() => {
           if (cancelRef.current) return
-          const speakBack = new SpeechSynthesisUtterance(card.backText)
+          const speakBack = new SpeechSynthesisUtterance(backText)
           speakBack.rate = 0.9
           setPhase('back')
 
           speakBack.onboundary = (e) => {
             if (e.name !== 'word') return
-            setWordRange({ start: e.charIndex, length: e.charLength ?? wordLengthAt(card.backText, e.charIndex) })
+            setWordRange({ start: e.charIndex, length: e.charLength ?? wordLengthAt(backText, e.charIndex) })
           }
 
           speakBack.onend = () => {
@@ -331,7 +335,7 @@ export function AutoPlayPlayer({ onClose, limit, unmasteredOnly }: AutoPlayPlaye
               <div className="bg-gray-50 rounded-lg px-4 py-3 mb-3 space-y-2 max-h-36 overflow-y-auto">
                 <div className="text-sm sm:text-base font-semibold leading-relaxed">
                   <HighlightedText
-                    text={current.frontText}
+                    text={normalizeCardText(current.frontText)}
                     range={phase === 'front' ? wordRange : null}
                     dim={phase === 'back'}
                     large
@@ -339,7 +343,7 @@ export function AutoPlayPlayer({ onClose, limit, unmasteredOnly }: AutoPlayPlaye
                 </div>
                 <div className="text-sm sm:text-base leading-relaxed border-t border-gray-200 pt-2">
                   <HighlightedText
-                    text={current.backText}
+                    text={normalizeCardText(current.backText)}
                     range={phase === 'back' ? wordRange : null}
                     dim={phase === 'front'}
                     large

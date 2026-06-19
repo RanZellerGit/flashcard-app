@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { Flashcard } from '@/lib/types'
+import { normalizeCardText } from '@/lib/utils'
 
 interface SwipeCardProps {
   card: Flashcard
@@ -45,7 +46,7 @@ export function SwipeCard({ card, onSwipe }: SwipeCardProps) {
       setIsSpeaking(false)
       return
     }
-    const text = isFlipped ? card.backText : card.frontText
+    const text = normalizeCardText(isFlipped ? card.backText : card.frontText)
     const utterance = new SpeechSynthesisUtterance(text)
     utterance.onend = () => setIsSpeaking(false)
     utterance.onerror = () => setIsSpeaking(false)
@@ -165,8 +166,8 @@ export function SwipeCard({ card, onSwipe }: SwipeCardProps) {
             </p>
             <div className="flex-1 flex items-center justify-center w-full">
               <div className="overflow-y-auto w-full" style={{ maxHeight: '220px' }}>
-                <p className="text-2xl font-semibold text-gray-900 text-center leading-snug py-2">
-                  {card.frontText}
+                <p className="text-2xl font-semibold text-gray-900 text-center leading-snug py-2 whitespace-pre-line">
+                  {normalizeCardText(card.frontText)}
                 </p>
               </div>
             </div>
@@ -191,8 +192,8 @@ export function SwipeCard({ card, onSwipe }: SwipeCardProps) {
             </p>
             <div className="flex-1 flex items-center justify-center w-full">
               <div className="overflow-y-auto w-full" style={{ maxHeight: '220px' }}>
-                <p className="text-2xl font-semibold text-gray-900 text-center leading-snug py-2">
-                  {card.backText}
+                <p className="text-2xl font-semibold text-gray-900 text-center leading-snug py-2 whitespace-pre-line">
+                  {normalizeCardText(card.backText)}
                 </p>
               </div>
             </div>

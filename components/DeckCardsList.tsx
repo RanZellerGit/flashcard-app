@@ -1,6 +1,7 @@
 'use client'
 
 import { Flashcard } from '@/lib/types'
+import { normalizeCardText } from '@/lib/utils'
 
 interface DeckCardsListProps {
   cards: Flashcard[]
@@ -50,11 +51,11 @@ export function DeckCardsList({
                     Card {card.order + 1}
                   </span>
                 </div>
-                <p className="font-medium text-gray-900 mt-2 break-words">
-                  {card.frontText}
+                <p className="font-medium text-gray-900 mt-2 break-words whitespace-pre-line">
+                  {normalizeCardText(card.frontText)}
                 </p>
-                <p className="text-sm text-gray-600 mt-1 break-words">
-                  {card.backText}
+                <p className="text-sm text-gray-600 mt-1 break-words whitespace-pre-line">
+                  {normalizeCardText(card.backText)}
                 </p>
               </div>
 
