@@ -6,6 +6,7 @@
  */
 import { auth, clerkClient } from '@clerk/nextjs/server'
 import type { User } from '@clerk/nextjs/server'
+import { getViewHistories, type ViewHistory } from '@/lib/stats/viewHistory'
 import {
   type Role,
   getPrimaryEmail,
@@ -26,13 +27,15 @@ export interface AdminUser {
   bootstrapAdmin: boolean
   createdAt: string
   lastSignInAt: string | null
+  /** Cards viewed over the last 14 days (see lib/stats/viewHistory.ts). */
+  viewHistory: ViewHistory
 }
 
 function adminEmails(): string[] {
   return parseAdminEmails(process.env.ADMIN_EMAILS)
 }
 
-export function toAdminUser(user: User): AdminUser {
+export function toAdminUser(user: User, viewHistory?: ViewHistory): AdminUser {
   const emails = adminEmails()
   const name = [user.firstName, user.lastName].filter(Boolean).join(' ').trim()
   return {
@@ -44,6 +47,7 @@ export function toAdminUser(user: User): AdminUser {
     bootstrapAdmin: isBootstrapAdmin(user, emails),
     createdAt: new Date(user.createdAt).toISOString(),
     lastSignInAt: user.lastSignInAt ? new Date(user.lastSignInAt).toISOString() : null,
+    viewHistory: viewHistory ?? { daily: [], total: 0 },
   }
 }
 
@@ -92,7 +96,8 @@ export async function listUsers({ query, limit = 50, offset = 0 }: ListUsersOpti
     offset,
     orderBy: '-created_at',
   })
-  return { users: data.map(toAdminUser), totalCount }
+  const histories = await getViewHistories(data.map((u) => u.id))
+  return { users: data.map((u) => toAdminUser(u, histories.get(u.id))), totalCount }
 }
 
 export async function setUserRole(userId: string, role: Role): Promise<AdminUser> {
@@ -101,5 +106,6 @@ export async function setUserRole(userId: string, role: Role): Promise<AdminUser
   const updated = await client.users.updateUserMetadata(userId, {
     publicMetadata: { ...existing.publicMetadata, role },
   })
-  return toAdminUser(updated)
+  const histories = await getViewHistories([userId])
+  return toAdminUser(updated, histories.get(userId))
 }

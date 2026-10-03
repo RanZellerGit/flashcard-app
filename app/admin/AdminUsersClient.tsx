@@ -22,6 +22,28 @@ function formatDate(iso: string | null) {
   })
 }
 
+function ViewsSparkline({ daily, total }: { daily: number[]; total: number }) {
+  const max = Math.max(1, ...daily)
+  return (
+    <div className="flex items-center gap-3">
+      <span className="font-semibold text-gray-900 tabular-nums w-10 text-right">{total}</span>
+      <div
+        className="flex items-end gap-px h-6"
+        aria-hidden="true"
+        title={daily.map((c, i) => `${i === daily.length - 1 ? 'today' : `${daily.length - 1 - i}d ago`}: ${c}`).join('\n')}
+      >
+        {daily.map((c, i) => (
+          <div
+            key={i}
+            className={c > 0 ? 'w-1.5 rounded-sm bg-blue-500' : 'w-1.5 rounded-sm bg-gray-200'}
+            style={{ height: `${Math.max(8, (c / max) * 100)}%` }}
+          />
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export function AdminUsersClient({
   currentUserId,
   initialUsers,
@@ -146,6 +168,7 @@ export function AdminUsersClient({
                 <th className="px-4 py-3 font-medium">User</th>
                 <th className="px-4 py-3 font-medium hidden md:table-cell">Joined</th>
                 <th className="px-4 py-3 font-medium hidden md:table-cell">Last sign-in</th>
+                <th className="px-4 py-3 font-medium">Viewed (14d)</th>
                 <th className="px-4 py-3 font-medium">Role</th>
                 <th className="px-4 py-3 font-medium text-right">Action</th>
               </tr>
@@ -153,7 +176,7 @@ export function AdminUsersClient({
             <tbody className="divide-y divide-gray-100">
               {users.length === 0 && !loading && (
                 <tr>
-                  <td colSpan={5} className="px-4 py-8 text-center text-gray-500">
+                  <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
                     No users found
                   </td>
                 </tr>
@@ -189,6 +212,9 @@ export function AdminUsersClient({
                     </td>
                     <td className="px-4 py-3 text-gray-600 hidden md:table-cell">
                       {formatDate(user.lastSignInAt)}
+                    </td>
+                    <td className="px-4 py-3">
+                      <ViewsSparkline daily={user.viewHistory.daily} total={user.viewHistory.total} />
                     </td>
                     <td className="px-4 py-3">
                       <span
