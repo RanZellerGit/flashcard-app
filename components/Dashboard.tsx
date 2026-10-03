@@ -21,6 +21,7 @@ interface DashboardProps {
   userId: string
   initialDecks?: Deck[]
   initialStats?: Stats
+  isAdmin?: boolean
 }
 
 /**
@@ -32,6 +33,7 @@ export function Dashboard({
   userId,
   initialDecks = [],
   initialStats,
+  isAdmin = false,
 }: DashboardProps) {
   const hasSSRData = initialStats !== undefined
   const [showPlayer, setShowPlayer] = useState(false)
@@ -88,6 +90,7 @@ export function Dashboard({
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <DashboardHeader
+        isAdmin={isAdmin}
         onCreateDeck={onCreateDeck}
         onListenAll={() => {
           setPlayerLimit(undefined)

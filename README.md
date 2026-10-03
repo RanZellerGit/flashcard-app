@@ -121,6 +121,19 @@ flashcard-app/
 - **← / →** - Navigate to previous/next card
 - **Esc** - Exit study mode
 
+### Admin Users
+Admins can see every registered user and grant or revoke the admin role.
+
+- **Who is an admin?** A user whose Clerk `publicMetadata.role` is `admin`, or whose primary
+  email is listed in the `ADMIN_EMAILS` environment variable (comma-separated).
+- **Bootstrap the first admin** by setting `ADMIN_EMAILS=you@example.com` in your environment
+  and restarting the app. Admins listed this way show as "via env" and cannot be demoted from the UI.
+- **Manage users** at `/admin` (an **Admin** link appears in the dashboard header for admins).
+  Use **Make admin** / **Remove admin** on each row. You cannot remove your own admin role.
+- **API**: `GET /api/admin/users?query=&limit=&offset=` lists users;
+  `PATCH /api/admin/users/:id` with `{ "role": "admin" | "user" }` updates a role.
+  Both return `403` for non-admins.
+
 ## 💾 Data Storage
 
 ### Local Storage

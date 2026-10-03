@@ -10,9 +10,10 @@ interface HomeClientProps {
   userId: string
   initialDecks: Deck[]
   initialStats: { totalCards: number; masteredCards: number; viewedToday: number }
+  isAdmin?: boolean
 }
 
-export function HomeClient({ userId, initialDecks, initialStats }: HomeClientProps) {
+export function HomeClient({ userId, initialDecks, initialStats, isAdmin = false }: HomeClientProps) {
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [refreshTrigger, setRefreshTrigger] = useState(0)
 
@@ -35,6 +36,7 @@ export function HomeClient({ userId, initialDecks, initialStats }: HomeClientPro
         userId={userId}
         initialDecks={initialDecks}
         initialStats={initialStats}
+        isAdmin={isAdmin}
       />
 
       {showCreateForm && (

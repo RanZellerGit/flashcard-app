@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { db } from '@/lib/db'
 import { decks, flashcards, dailyViews } from '@/lib/db/schema'
 import { eq, desc, and, gte, count } from 'drizzle-orm'
+import { isAdmin } from '@/lib/auth/admin'
 import { HomeClient } from './HomeClient'
 
 function todayString() {
@@ -15,11 +16,12 @@ export default async function Home() {
     redirect('/sign-in')
   }
 
-  const [deckRows, totalResult, masteredResult, viewedResult] = await Promise.all([
+  const [deckRows, totalResult, masteredResult, viewedResult, userIsAdmin] = await Promise.all([
     db.select().from(decks).where(eq(decks.userId, userId)).orderBy(desc(decks.createdDate)),
     db.select({ total: count() }).from(flashcards).where(eq(flashcards.userId, userId)),
     db.select({ mastered: count() }).from(flashcards).where(and(eq(flashcards.userId, userId), gte(flashcards.knownCount, 10))),
     db.select({ viewedCount: dailyViews.count }).from(dailyViews).where(and(eq(dailyViews.userId, userId), eq(dailyViews.date, todayString()))),
+    isAdmin(userId),
   ])
 
   const initialDecks = deckRows.map((row) => ({
@@ -37,5 +39,12 @@ export default async function Home() {
     viewedToday: viewedResult[0]?.viewedCount ?? 0,
   }
 
-  return <HomeClient userId={userId} initialDecks={initialDecks} initialStats={initialStats} />
+  return (
+    <HomeClient
+      userId={userId}
+      initialDecks={initialDecks}
+      initialStats={initialStats}
+      isAdmin={userIsAdmin}
+    />
+  )
 }

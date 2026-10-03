@@ -10,10 +10,12 @@ export function DashboardHeader({
   onCreateDeck,
   onListenAll,
   onPracticeListen,
+  isAdmin = false,
 }: {
   onCreateDeck: () => void
   onListenAll: () => void
   onPracticeListen: () => void
+  isAdmin?: boolean
 }) {
   return (
     <div className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-10">
@@ -21,7 +23,17 @@ export function DashboardHeader({
         {/* Top row: title + user avatar */}
         <div className="flex items-center justify-between">
           <h1 className="text-xl sm:text-3xl font-bold text-gray-900">Flashcard App</h1>
-          <UserButton />
+          <div className="flex items-center gap-3">
+            {isAdmin && (
+              <Link
+                href="/admin"
+                className="px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg border border-purple-300 text-purple-700 hover:bg-purple-50 transition"
+              >
+                Admin
+              </Link>
+            )}
+            <UserButton />
+          </div>
         </div>
 
         {/* Bottom row: action buttons */}
